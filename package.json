@@ -14,7 +14,9 @@
     "dev": "concurrently -n server,web -c blue,green \"npm run dev -w server\" \"npm run dev -w web\"",
     "test": "npm test -w server && npm test -w web",
     "typecheck": "npm run typecheck -w server && npm run typecheck -w web",
-    "check-models": "npm run check-models -w server"
+    "check-models": "npm run check-models -w server",
+    "warm-cache": "npm run warm-cache -w server",
+    "eval": "npm run eval -w server --"
   },
   "devDependencies": {
     "concurrently": "^10.0.5"

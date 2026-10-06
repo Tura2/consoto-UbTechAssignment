@@ -7,7 +7,9 @@
     "dev": "tsx watch src/index.ts",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json",
-    "check-models": "tsx src/scripts/check-models.ts"
+    "check-models": "tsx src/scripts/check-models.ts",
+    "warm-cache": "tsx src/scripts/warm-cache.ts",
+    "eval": "tsx src/scripts/eval.ts"
   },
   "dependencies": {
     "express": "^5.2.1",
