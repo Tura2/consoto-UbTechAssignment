@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { DietNeed, Place } from "../../shared/domain";
-import { OVERPASS_URL, fetchOverpass } from "../src/clients/overpass";
+import { OVERPASS_URL, checkOverpassRemark, fetchOverpass } from "../src/clients/overpass";
 import { allPlaces, buildPlacesQuery, readWheelchair, summarizeVenues, toPlace } from "../src/domain/places";
 import overpass from "./fixtures/overpass-lisbon.json";
 import { fakeHttp } from "./helpers/fake-http";
@@ -90,5 +90,21 @@ describe("places", () => {
     expect(calls[0]).toMatchObject({ url: OVERPASS_URL, method: "POST", retries: 0, maxConcurrency: 1 });
     expect(calls[0].body).toBe(`data=${encodeURIComponent("[out:json];node(1);out;")}`);
     expect(result.elements).toHaveLength(10);
+  });
+
+  it("rejects an Overpass runtime-error remark", () => {
+    expect(() =>
+      checkOverpassRemark({
+        elements: [],
+        remark: 'runtime error: Query timed out in "query" at line 3 after 26 seconds.',
+      })
+    ).toThrow('runtime error: Query timed out in "query" at line 3 after 26 seconds.');
+    expect(() => checkOverpassRemark(overpass)).not.toThrow();
+  });
+
+  it("passes a validate function in the Overpass spec", async () => {
+    const { http, calls } = fakeHttp(overpass);
+    await fetchOverpass(http, "[out:json];node(1);out;");
+    expect(calls[0].validate).toBeInstanceOf(Function);
   });
 });

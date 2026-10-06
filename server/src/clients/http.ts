@@ -16,6 +16,7 @@ export type RequestSpec = {
   retries?: number;
   maxConcurrency?: number;
   signal?: AbortSignal;
+  validate?: (body: unknown) => void; // throw to reject a 200 response before it is cached
 };
 
 export type HttpResult = { body: unknown; source: Source; stale: boolean };
@@ -132,8 +133,15 @@ export function createHttp(options: Options): Http {
     }
     const text = await response.text();
     try {
-      return JSON.parse(text);
-    } catch {
+      const body = JSON.parse(text);
+      try {
+        spec.validate?.(body);
+      } catch (error) {
+        throw new HttpError(`${spec.name}: ${(error as Error).message}`, response.status, false);
+      }
+      return body;
+    } catch (error) {
+      if (error instanceof HttpError) throw error;
       throw new HttpError(`${spec.name}: the response was not JSON`, response.status, false);
     }
   }

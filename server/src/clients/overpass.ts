@@ -7,7 +7,14 @@ import type { Http } from "./http";
 export const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
 const WEEK = 7 * 86_400_000;
 
-const OverpassBody = z.object({ elements: z.array(z.unknown()) });
+const OverpassBody = z.object({ elements: z.array(z.unknown()), remark: z.string().optional() });
+
+export function checkOverpassRemark(body: unknown): void {
+  const parsed = OverpassBody.parse(body);
+  if (parsed.remark && parsed.remark.toLowerCase().includes("runtime error")) {
+    throw new Error(parsed.remark);
+  }
+}
 
 export async function fetchOverpass(
   http: Http,
@@ -23,6 +30,7 @@ export async function fetchOverpass(
     timeoutMs: 30_000,
     retries: 0,
     maxConcurrency: 1,
+    validate: checkOverpassRemark,
     signal,
   });
   return { elements: OverpassBody.parse(result.body).elements, source: result.source };

@@ -135,4 +135,23 @@ describe("createHttp", () => {
     expect(result.source.cached).toBe(false);
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
+
+  it("rejects a 200 that fails validation without caching it", async () => {
+    const { http, fetchImpl } = setup([() => json({ bad: "data" }), () => json({ good: "data" })]);
+    const specWithValidate = {
+      ...spec,
+      validate: (body: unknown) => {
+        if (!(body as Record<string, unknown>)["good"]) throw new Error("missing good field");
+      },
+    };
+    await expect(http.getJson(specWithValidate)).rejects.toMatchObject({
+      message: expect.stringContaining("missing good field"),
+      retryable: false,
+    });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    // Second call should fetch again (proves the bad response was not cached)
+    const result = await http.getJson(specWithValidate);
+    expect(result.body).toEqual({ good: "data" });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
 });
