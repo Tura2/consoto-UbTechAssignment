@@ -1,13 +1,15 @@
 import type { LlmCaller } from "../../../shared/events";
-import type { AssistantMessage, Llm } from "../../src/llm/openrouter";
+import type { AssistantMessage, ChatMessage, Llm } from "../../src/llm/openrouter";
 
 // An Llm that replays scripted replies per caller. Each call emits an llm_call event like the real one.
 export function scriptedLlm(script: Partial<Record<LlmCaller, AssistantMessage[]>>, answerText = "Here is the answer.") {
   const queues = new Map(Object.entries(script).map(([who, replies]) => [who, [...(replies ?? [])]]));
   const calls: LlmCaller[] = [];
+  const requests: { who: LlmCaller; messages: ChatMessage[] }[] = [];
   const llm: Llm = {
     async complete(request, emit) {
       calls.push(request.who);
+      requests.push({ who: request.who, messages: request.messages });
       const next = queues.get(request.who)?.shift();
       if (!next) throw new Error(`No scripted reply for ${request.who}`);
       emit({ type: "llm_call", who: request.who, model: "fake/model", attempt: 1, status: "ok", ms: 1, detail: null, tokens: null });
@@ -15,12 +17,13 @@ export function scriptedLlm(script: Partial<Record<LlmCaller, AssistantMessage[]
     },
     async stream(request, emit, onText) {
       calls.push(request.who);
+      requests.push({ who: request.who, messages: request.messages });
       emit({ type: "llm_call", who: request.who, model: "fake/model", attempt: 1, status: "ok", ms: 1, detail: null, tokens: null });
       onText(answerText);
       return { text: answerText, model: "fake/model" };
     },
   };
-  return { llm, calls };
+  return { llm, calls, requests };
 }
 
 export function toolCalls(list: { name: string; args: unknown }[]): AssistantMessage {
