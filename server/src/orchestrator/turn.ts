@@ -100,7 +100,7 @@ async function runAgents(
   }
 
   // One time budget for the whole agent phase. An agent still running after it reports a timeout.
-  const phaseSignal = AbortSignal.any([signal, AbortSignal.timeout(deps.agentPhaseMs ?? 45_000)]);
+  const phaseSignal = AbortSignal.any([signal, AbortSignal.timeout(deps.agentPhaseMs ?? 90_000)]);
   const runOne = async (agent: AgentId): Promise<AgentResult> => {
     const result = await runAgent({
       def: AGENTS[agent],

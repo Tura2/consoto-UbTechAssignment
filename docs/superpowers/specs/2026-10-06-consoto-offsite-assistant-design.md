@@ -229,7 +229,7 @@ type Conversation = {
    start date; code runs the venues agent first if that finding is missing, and
    assigns the earliest clean window if there is no start date (via the
    `calendar_find_clean_windows` tool, called by code). The agent phase has a
-   45-second budget; agents still running after that are aborted and marked
+   90-second budget; agents still running after that are aborted and marked
    `timeout`.
 4. **Policy check (code).** Whenever the trip has a city, the orchestrator calls
    the `policy_check` tool directly (no model involved) and emits its steps.
@@ -307,6 +307,9 @@ Itinerary items: `slot` is `morning`, `lunch`, `afternoon` or `dinner`;
 The itinerary writer may submit at most twice: draft, read the code's
 problems, fix, resubmit. After the second submission the last plan is kept and
 its problems are reported (evaluator-optimizer pattern).
+
+- Limits: 3 tool rounds per agent, 2 itinerary submissions, 90 s for the agent
+  phase.
 
 ### Agent instructions (outline)
 
