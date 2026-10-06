@@ -52,6 +52,7 @@ describe("graders", () => {
     expect(gapMentions(/no team data/i).check({ events: noTeam, trip, answer: "" })).toBeNull();
     expect(SAYS_NO_DATA.test("There is no cost information for Rome; data only covers Lisbon.")).toBe(true);
     expect(SAYS_NO_DATA.test("I found no team data for the Data team.")).toBe(true);
+    expect(SAYS_NO_DATA.test("Consoto's HR data does not contain a team identified as data; only team available is platform.")).toBe(true);
     expect(SAYS_NO_DATA.test("Rome would cost 3,000 ILS.")).toBe(false);
   });
 });

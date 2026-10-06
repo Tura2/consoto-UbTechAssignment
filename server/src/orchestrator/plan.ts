@@ -44,6 +44,7 @@ Routing rules:
 - Drafting a plan or itinerary: itinerary, plus venues if food or access is mentioned.
 - Choose the smallest set of agents that answers the message. Use no agents for greetings or questions about the assistant itself.
 - Write each task as a direct instruction that names the cities, dates and team.
+- When comparing destinations, name every candidate city from the current trip in each task.
 
 Trip facts:
 - tripUpdate holds only what the latest message adds or changes.

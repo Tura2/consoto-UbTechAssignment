@@ -128,7 +128,7 @@ Conversation state lives in server memory: the messages, the trip facts, and the
 ## Tests and evals
 
 - `npm test`: unit tests for every rule, number and parser, plus agent, turn and API tests with a scripted model. No network, no LLM.
-- `npm run eval`: the three demo messages and the likely curveballs ("make it 4 days", "what about Prague?", "what about Rome?", an unknown team) against the real model, graded by code. Use `-- --scenario demo` for one scenario, `--trials 3` for repeat runs. Transcripts are saved in `evals/runs/`. A full run uses about 30 to 40 LLM requests.
+- `npm run eval`: the three demo messages and the likely curveballs ("make it 4 days", "what about Prague?", "what about Rome?", an unknown team) against the real model, graded by code. Use `-- --scenario demo` for one scenario, `--trials 3` for repeat runs. Transcripts are saved in `evals/runs/`. A full run uses about 50 to 55 LLM requests, so an account limited to 50 free requests per day cannot afford one (use `-- --scenario demo` instead).
 
 ## Adding a tool
 

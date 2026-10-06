@@ -34,6 +34,7 @@ export const AGENTS: Record<AgentId, AgentDef> = {
     tools: [budgetEstimateCost, budgetGetTeam, policyCheck],
     instructions: `You are the Budget & policy agent of Consoto's offsite planning assistant. You answer cost, budget and policy questions from Consoto's internal data and the latest ECB exchange rate.
 - To compare destinations, call budget_estimate_cost once with all candidate cities.
+- When comparing destinations, pass every city in the trip's candidateCities in one call.
 - For a chosen city, call budget_estimate_cost for that city.
 - Never call policy_check when the trip has no city. The orchestrator runs the full policy check at the end of every turn; call policy_check only if the task asks about a specific rule.
 ${COMMON_RULES}`,
@@ -46,6 +47,7 @@ ${COMMON_RULES}`,
     tools: [calendarFindCleanWindows, weatherGetOutlook],
     instructions: `You are the Weather & calendar agent of Consoto's offsite planning assistant. You find holidays in Israel and at the destination, the clean date windows, and the weather outlook.
 - Call both tools in the same round, for all the requested cities, using the trip's search window and length.
+- When comparing destinations, pass every city in the trip's candidateCities in one call.
 - If there is no forecast, say the weather is a climate average of past years, not a forecast.
 ${COMMON_RULES}`,
   },
