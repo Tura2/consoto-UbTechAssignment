@@ -13,6 +13,12 @@ export const PORTUGAL_2027: HolidayItem[] = [
   { date: "2027-03-28", name: "Easter Sunday", side: "destination", country: "Portugal", source: "Nager.Date" },
 ];
 
+export const CZECHIA_2027: HolidayItem[] = [
+  { date: "2027-03-22", name: "Czech Holiday 1", side: "destination", country: "Czechia", source: "Nager.Date" },
+  { date: "2027-03-23", name: "Czech Holiday 2", side: "destination", country: "Czechia", source: "Nager.Date" },
+  { date: "2027-03-24", name: "Czech Holiday 3", side: "destination", country: "Czechia", source: "Nager.Date" },
+];
+
 const POINTS: Record<string, { lat: number; lon: number }> = {
   Lisbon: { lat: 38.72509, lon: -9.1498 },
   Barcelona: { lat: 41.38879, lon: 2.15899 },
@@ -34,7 +40,7 @@ export function fakeData(overrides: Partial<DataSources> = {}): DataSources {
       source: fakeSource("Hebcal (Israeli holidays)"),
     }),
     countryHolidays: async (country) => ({
-      items: country.code === "PT" ? PORTUGAL_2027 : [],
+      items: country.code === "PT" ? PORTUGAL_2027 : country.code === "CZ" ? CZECHIA_2027 : [],
       source: fakeSource(`Nager.Date (${country.name} public holidays)`),
     }),
     geocode: async (city) => {
