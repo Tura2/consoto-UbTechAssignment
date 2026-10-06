@@ -1,0 +1,10 @@
+{
+  "note": "Reference data added by us, not from the brief: country and subdivision codes for holiday lookups.",
+  "cities": {
+    "Lisbon": { "countryCode": "PT", "country": "Portugal", "subdivisionCode": null, "region": "Europe" },
+    "Barcelona": { "countryCode": "ES", "country": "Spain", "subdivisionCode": "ES-CT", "region": "Europe" },
+    "Athens": { "countryCode": "GR", "country": "Greece", "subdivisionCode": null, "region": "Europe" },
+    "Prague": { "countryCode": "CZ", "country": "Czechia", "subdivisionCode": null, "region": "Europe" },
+    "Budapest": { "countryCode": "HU", "country": "Hungary", "subdivisionCode": null, "region": "Europe" }
+  }
+}

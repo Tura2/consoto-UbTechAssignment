@@ -1,0 +1,21 @@
+{
+  "teams": {
+    "platform": {
+      "name": "Platform",
+      "members": [
+        { "name": "Noa Levi", "role": "Team lead", "dietary": null, "accessibility": null },
+        { "name": "Omer Haddad", "role": "Backend", "dietary": "vegan", "accessibility": null },
+        { "name": "Dana Mizrahi", "role": "Backend", "dietary": null, "accessibility": null },
+        { "name": "Yossi Ben-David", "role": "DevOps", "dietary": null, "accessibility": "wheelchair" },
+        { "name": "Tamar Peretz", "role": "Frontend", "dietary": "vegan", "accessibility": null },
+        { "name": "Eitan Shapiro", "role": "Backend", "dietary": "kosher", "accessibility": null },
+        { "name": "Lior Avraham", "role": "QA", "dietary": null, "accessibility": null },
+        { "name": "Shira Katz", "role": "Frontend", "dietary": "gluten_free", "accessibility": null },
+        { "name": "Amit Friedman", "role": "DevOps", "dietary": null, "accessibility": null },
+        { "name": "Rotem Biton", "role": "Data", "dietary": null, "accessibility": null },
+        { "name": "Gil Azoulay", "role": "Backend", "dietary": null, "accessibility": null },
+        { "name": "Yael Dahan", "role": "Product", "dietary": null, "accessibility": null }
+      ]
+    }
+  }
+}

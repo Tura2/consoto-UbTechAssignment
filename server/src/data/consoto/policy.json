@@ -1,0 +1,17 @@
+{
+  "maxDays": 3,
+  "maxNights": 2,
+  "budgetIlsPerPerson": 4000,
+  "overBudgetApprover": "CFO",
+  "plannedCurrency": "EUR",
+  "reportedCurrency": "ILS",
+  "rateSource": "ECB",
+  "rules": [
+    { "id": 1, "text": "An offsite is max 3 days and 2 nights." },
+    { "id": 2, "text": "The budget is up to 4,000 ILS per person, including flights, hotel, food and activities. Anything above that needs the CFO's approval." },
+    { "id": 3, "text": "Don't pick dates that fall on a holiday in Israel or a public holiday in the destination country." },
+    { "id": 4, "text": "Every team meal needs an option for everyone's dietary needs." },
+    { "id": 5, "text": "All places and activities need to be accessible for everyone on the team." },
+    { "id": 6, "text": "Costs are planned in euros and reported in shekels, using the latest ECB rate." }
+  ]
+}
