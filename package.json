@@ -1,0 +1,13 @@
+{
+  "name": "consoto-offsite-assistant",
+  "private": true,
+  "type": "module",
+  "workspaces": ["server"],
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "npm run start -w server",
+    "test": "npm test -w server",
+    "typecheck": "npm run typecheck -w server",
+    "check-models": "npm run check-models -w server"
+  }
+}
