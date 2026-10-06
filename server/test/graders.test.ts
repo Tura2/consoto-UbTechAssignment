@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Trip } from "../../shared/domain";
 import type { StreamEvent } from "../../shared/events";
 import { answerMentions, cityCostMatchesCode, gapMentions, planIncludes, policyRule, tripDays, weatherIsClimateAverage } from "../src/evals/graders";
+import { SAYS_NO_DATA } from "../src/evals/scenarios";
 import { BASE_TRIP } from "./helpers/ctx";
 
 const trip: Trip = { ...BASE_TRIP, days: 4, nights: 3 };
@@ -44,5 +45,13 @@ describe("graders", () => {
     expect(planIncludes("venues").check(input)).toBe("missing venues (chose budget_policy)");
     expect(tripDays(3).check(input)).toBe("expected 3 days, got 4");
     expect(answerMentions(/kosher/).check(input)).toBe("the answer does not match /kosher/");
+  });
+
+  it("accept honest no-data answers and the team gap in any case", () => {
+    const noTeam: StreamEvent[] = [{ type: "tool_end", callId: "2", ok: true, summary: 'No team data for "data".', data: {}, sources: [], gaps: [], cached: false, ms: 1 }];
+    expect(gapMentions(/no team data/i).check({ events: noTeam, trip, answer: "" })).toBeNull();
+    expect(SAYS_NO_DATA.test("There is no cost information for Rome; data only covers Lisbon.")).toBe(true);
+    expect(SAYS_NO_DATA.test("I found no team data for the Data team.")).toBe(true);
+    expect(SAYS_NO_DATA.test("Rome would cost 3,000 ILS.")).toBe(false);
   });
 });

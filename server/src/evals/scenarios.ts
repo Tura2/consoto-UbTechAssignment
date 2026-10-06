@@ -26,6 +26,9 @@ const MESSAGE_2 = "Lisbon sounds good. What's the weather usually like then? And
 const MESSAGE_3 =
   "Ok, let's go with it. Can you draft the 3 days, make sure everyone can eat and get around, and tell me the total in shekels? Are we within policy?";
 
+// Honest "I do not have that" answers, in the wordings the model tends to use.
+export const SAYS_NO_DATA = /\bno (\w+ )?(data|information)\b|don'?t have|do not have|only (have|cover)|unable|not available|can'?t/i;
+
 export const SCENARIOS: Scenario[] = [
   {
     name: "demo",
@@ -57,7 +60,7 @@ export const SCENARIOS: Scenario[] = [
     steps: [
       {
         message: "Could we do a 3 day offsite in Rome for the Platform team, second half of March? What would it cost?",
-        graders: [turnSucceeded, gapMentions(/Rome/), answerMentions(/no cost data|don't have|do not have|only have/i)],
+        graders: [turnSucceeded, gapMentions(/Rome/), answerMentions(SAYS_NO_DATA)],
       },
     ],
   },
@@ -66,7 +69,7 @@ export const SCENARIOS: Scenario[] = [
     steps: [
       {
         message: "Plan a 3 day offsite in Europe for the Data team, second half of March. What would it cost?",
-        graders: [turnSucceeded, gapMentions(/Data/), answerMentions(/no data|don't have|do not have|only have/i)],
+        graders: [turnSucceeded, gapMentions(/no team data/i), answerMentions(SAYS_NO_DATA)],
       },
     ],
   },
