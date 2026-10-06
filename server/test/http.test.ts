@@ -1,4 +1,4 @@
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
@@ -110,5 +110,29 @@ describe("createHttp", () => {
     controller.abort();
     await expect(http.getJson({ ...spec, signal: controller.signal })).rejects.toBeDefined();
     expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("still returns fresh data when the cache cannot be written", async () => {
+    // Create a regular file, then try to use a path under it as cacheDir (will fail to create).
+    const tempDir = mkdtempSync(path.join(os.tmpdir(), "http-test-"));
+    const blockingFile = path.join(tempDir, "blocked");
+    writeFileSync(blockingFile, "");
+    const invalidCacheDir = path.join(blockingFile, "cache");
+
+    const fetchImpl = vi.fn(async (_url: string, _init: RequestInit) => json({ a: 1 }));
+    let clock = 1_000_000;
+    const sleep = vi.fn(async (_ms: number) => {});
+    const http = createHttp({
+      cacheDir: invalidCacheDir,
+      userAgent: "test-agent",
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+      now: () => clock,
+      sleep,
+    });
+
+    const result = await http.getJson(spec);
+    expect(result.body).toEqual({ a: 1 });
+    expect(result.source.cached).toBe(false);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 });

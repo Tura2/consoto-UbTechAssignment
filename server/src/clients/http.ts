@@ -150,7 +150,12 @@ export function createHttp(options: Options): Http {
       try {
         const body = await slots.run(() => fetchOnce(spec));
         const fetchedAt = now();
-        await writeCache({ key, fetchedAt, body });
+        // Cache is an optimization; a write failure should never cause retries or fail the request.
+        try {
+          await writeCache({ key, fetchedAt, body });
+        } catch {
+          // Ignore cache write errors (read-only disk, ENOSPC, missing dir, etc).
+        }
         return { body, source: sourceOf(spec, fetchedAt, false), stale: false };
       } catch (error) {
         if (spec.signal?.aborted) throw error;
