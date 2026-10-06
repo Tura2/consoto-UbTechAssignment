@@ -110,7 +110,8 @@ async function runAgents(
       llm: deps.llm,
       emit,
     });
-    if (result.status === "ok") conversation.findings[agent] = { depsKey: depsKey(agent, conversation.trip), result };
+    // Keep any successful tool result, even if the agent failed afterwards. A turn the user left saves nothing.
+    if (!signal.aborted && result.toolRuns.some((run) => run.result.ok)) conversation.findings[agent] = { depsKey: depsKey(agent, conversation.trip), result };
     return result;
   };
   const firstPhase = await Promise.all([...tasks.keys()].filter((agent) => agent !== "itinerary").map(runOne));
@@ -129,7 +130,7 @@ async function assumeStartDate(conversation: Conversation, deps: TurnDeps, emit:
     owner: "orchestrator",
     emit,
   });
-  if (!result.ok) return;
+  if (!result.ok || signal.aborted) return;
   const firstClean = (result.data as CalendarData).cities[0]?.windows.find((window) => window.clean);
   if (firstClean) conversation.trip = { ...conversation.trip, start: { date: firstClean.start, source: "assumed" } };
 }

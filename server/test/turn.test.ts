@@ -163,4 +163,37 @@ describe("runTurn", () => {
     expect(secondPlanner.messages).toContainEqual({ role: "user", content: "We like Lisbon." });
     expect(secondPlanner.messages).toContainEqual({ role: "assistant", content: "Noted." });
   });
+
+  it("keeps a successful tool result when the agent fails afterwards", async () => {
+    const { llm } = scriptedLlm({
+      planner: [toolCall("submit_plan", { agents: [{ agent: "itinerary", task: "Draft" }], reason: "You asked for a plan." })],
+      venues: [toolCall("places_find_for_team", { city: "Lisbon", team: "platform" })],
+      itinerary: [toolCall("itinerary_submit_plan", GOOD_PLAN), text("Drafted.")],
+    });
+    const { conversation, events } = await turnWith(llm, "Draft the 3 days.", (c) => {
+      c.trip = { ...BASE_TRIP, city: "Lisbon" };
+    });
+    expect(events.some((e) => e.type === "tool_end" && !e.ok)).toBe(false);
+    expect(cardsOf(events).some((card) => card.kind === "itinerary")).toBe(true);
+    expect(conversation.findings.venues).toBeDefined();
+  });
+
+  it("a stopped turn does not assume a start date", async () => {
+    const controller = new AbortController();
+    const { llm } = scriptedLlm({
+      planner: [toolCall("submit_plan", { agents: [{ agent: "budget_policy", task: "Total" }], reason: "Cost." })],
+    });
+    const base = fakeData();
+    const data = fakeData({
+      israelHolidays: async (from, to, signal) => {
+        controller.abort();
+        return base.israelHolidays(from, to, signal);
+      },
+    });
+    const conversation = createStore(newTrip).getOrCreate();
+    conversation.trip = { ...BASE_TRIP, city: "Lisbon" };
+    const turn = await runTurn(conversation, "Total?", deps(llm, data), () => {}, controller.signal);
+    expect(turn.status).toBe("stopped");
+    expect(conversation.trip.start).toBeNull();
+  });
 });
