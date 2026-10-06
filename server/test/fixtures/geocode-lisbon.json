@@ -1,0 +1,6 @@
+{
+  "results": [
+    { "id": 2267057, "name": "Lisbon", "latitude": 38.72509, "longitude": -9.1498, "country_code": "PT", "timezone": "Europe/Lisbon", "country": "Portugal" },
+    { "id": 5160951, "name": "Lisbon", "latitude": 40.772, "longitude": -80.76813, "country_code": "US", "timezone": "America/New_York", "country": "United States" }
+  ]
+}
