@@ -1,0 +1,9 @@
+{
+  "title": "Hebcal Israel March 2027",
+  "items": [
+    { "title": "Ta'anit Esther", "date": "2027-03-22", "category": "holiday", "subcat": "fast" },
+    { "title": "Erev Purim", "date": "2027-03-22", "category": "holiday", "subcat": "major" },
+    { "title": "Purim", "date": "2027-03-23", "category": "holiday", "subcat": "major" },
+    { "title": "Shushan Purim", "date": "2027-03-24", "category": "holiday", "subcat": "minor" }
+  ]
+}

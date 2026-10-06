@@ -1,0 +1,11 @@
+[
+  { "date": "2027-01-01", "name": "New Year's Day", "countryCode": "ES", "nationalHoliday": true, "subdivisionCodes": null, "holidayTypes": ["Public"] },
+  { "date": "2027-01-06", "name": "Epiphany", "countryCode": "ES", "nationalHoliday": true, "subdivisionCodes": null, "holidayTypes": ["Public"] },
+  { "date": "2027-02-28", "name": "Day of Andalucía", "countryCode": "ES", "nationalHoliday": false, "subdivisionCodes": ["ES-AN"], "holidayTypes": ["Public"] },
+  { "date": "2027-03-01", "name": "Day of the Balearic Islands", "countryCode": "ES", "nationalHoliday": false, "subdivisionCodes": ["ES-IB"], "holidayTypes": ["Public"] },
+  { "date": "2027-03-25", "name": "Maundy Thursday", "countryCode": "ES", "nationalHoliday": false, "subdivisionCodes": ["ES-AN", "ES-AR", "ES-CL", "ES-CM", "ES-CN", "ES-EX", "ES-GA", "ES-IB", "ES-RI", "ES-MD", "ES-MC", "ES-NC", "ES-AS", "ES-PV", "ES-CB"], "holidayTypes": ["Public"] },
+  { "date": "2027-03-26", "name": "Good Friday", "countryCode": "ES", "nationalHoliday": true, "subdivisionCodes": null, "holidayTypes": ["Public"] },
+  { "date": "2027-03-29", "name": "Easter Monday", "countryCode": "ES", "nationalHoliday": false, "subdivisionCodes": ["ES-CT", "ES-IB", "ES-RI", "ES-NC", "ES-PV", "ES-VC"], "holidayTypes": ["Public"] },
+  { "date": "2027-04-23", "name": "Castile and León Day", "countryCode": "ES", "nationalHoliday": false, "subdivisionCodes": ["ES-CL"], "holidayTypes": ["Public"] },
+  { "date": "2027-04-23", "name": "Day of Aragón", "countryCode": "ES", "nationalHoliday": false, "subdivisionCodes": ["ES-AR"], "holidayTypes": ["Public"] }
+]

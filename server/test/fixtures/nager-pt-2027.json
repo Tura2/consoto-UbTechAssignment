@@ -1,0 +1,19 @@
+[
+  { "date": "2027-01-01", "name": "New Year's Day", "countryCode": "PT", "nationalHoliday": true, "subdivisionCodes": null, "holidayTypes": ["Public"] },
+  { "date": "2027-02-09", "name": "Carnival", "countryCode": "PT", "nationalHoliday": true, "subdivisionCodes": null, "holidayTypes": ["Optional"] },
+  { "date": "2027-03-26", "name": "Good Friday", "countryCode": "PT", "nationalHoliday": true, "subdivisionCodes": null, "holidayTypes": ["Public"] },
+  { "date": "2027-03-28", "name": "Easter Sunday", "countryCode": "PT", "nationalHoliday": true, "subdivisionCodes": null, "holidayTypes": ["Public"] },
+  { "date": "2027-04-25", "name": "Freedom Day", "countryCode": "PT", "nationalHoliday": true, "subdivisionCodes": null, "holidayTypes": ["Public"] },
+  { "date": "2027-05-01", "name": "Labour Day", "countryCode": "PT", "nationalHoliday": true, "subdivisionCodes": null, "holidayTypes": ["Public"] },
+  { "date": "2027-05-27", "name": "Corpus Christi", "countryCode": "PT", "nationalHoliday": true, "subdivisionCodes": null, "holidayTypes": ["Public"] },
+  { "date": "2027-06-01", "name": "Azores Day", "countryCode": "PT", "nationalHoliday": false, "subdivisionCodes": ["PT-20"], "holidayTypes": ["Public"] },
+  { "date": "2027-06-10", "name": "National Day", "countryCode": "PT", "nationalHoliday": true, "subdivisionCodes": null, "holidayTypes": ["Public"] },
+  { "date": "2027-07-01", "name": "Madeira Day", "countryCode": "PT", "nationalHoliday": false, "subdivisionCodes": ["PT-30"], "holidayTypes": ["Public"] },
+  { "date": "2027-08-15", "name": "Assumption Day", "countryCode": "PT", "nationalHoliday": true, "subdivisionCodes": null, "holidayTypes": ["Public"] },
+  { "date": "2027-10-05", "name": "Republic Day", "countryCode": "PT", "nationalHoliday": true, "subdivisionCodes": null, "holidayTypes": ["Public"] },
+  { "date": "2027-11-01", "name": "All Saints Day", "countryCode": "PT", "nationalHoliday": true, "subdivisionCodes": null, "holidayTypes": ["Public"] },
+  { "date": "2027-12-01", "name": "Restoration of Independence", "countryCode": "PT", "nationalHoliday": true, "subdivisionCodes": null, "holidayTypes": ["Public"] },
+  { "date": "2027-12-08", "name": "Immaculate Conception", "countryCode": "PT", "nationalHoliday": true, "subdivisionCodes": null, "holidayTypes": ["Public"] },
+  { "date": "2027-12-25", "name": "Christmas Day", "countryCode": "PT", "nationalHoliday": true, "subdivisionCodes": null, "holidayTypes": ["Public"] },
+  { "date": "2027-12-26", "name": "St. Stephen's Day", "countryCode": "PT", "nationalHoliday": false, "subdivisionCodes": ["PT-30"], "holidayTypes": ["Public"] }
+]
