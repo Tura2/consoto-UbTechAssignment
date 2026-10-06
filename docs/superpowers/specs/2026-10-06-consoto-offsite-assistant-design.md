@@ -100,14 +100,15 @@ Public APIs and OpenRouter
 ### Repo layout
 
 ```text
-package.json            npm workspaces (shared, server, web) and root scripts
+package.json            npm workspaces (server, web) and root scripts
 .env.example            OPENROUTER_API_KEY, OPENROUTER_MODELS, PORT, LLM_REQUESTS_PER_MINUTE
-shared/src/             events.ts (stream event union), trip.ts (trip state), cards.ts (card types)
+shared/                 types only, imported with `import type`: domain.ts (trip, results), events.ts (stream events, cards, API payloads)
 server/src/
-  index.ts              Express app: routes, static web/dist, startup checks
-  config.ts             reads and validates env with zod
-  routes/               chat.ts (POST /api/chat), conversations.ts, health.ts, agents.ts
-  orchestrator/         plan.ts, turn.ts, answer.ts, cards.ts
+  index.ts              entry point: loads .env, config, starts the server, prints the health check
+  app.ts                Express routes: POST /api/chat (SSE), GET /api/conversations/:id, /api/health, /api/agents, static web/dist
+  config.ts             reads and validates env
+  health.ts, runtime.ts OpenRouter health check; builds the real dependencies
+  orchestrator/         plan.ts, trip.ts, turn.ts, answer.ts, cards.ts, tool-data.ts
   agents/               budget-policy.ts, weather-calendar.ts, venues.ts, itinerary.ts, registry.ts, runner.ts
   tools/                one file per tool + registry.ts + types.ts (ToolResult)
   domain/               cost.ts, policy.ts, dates.ts, climate.ts, places.ts, itinerary-check.ts
@@ -162,9 +163,10 @@ typed objects or a typed "not found" result listing what does exist.
 ### Reference data (ours, labeled as such)
 
 `destinations.json` maps each cost-table city to `countryCode` (PT, ES, GR, CZ,
-HU) and an optional `subdivisionCode` for regional holidays (Lisbon `PT-11`,
-Barcelona `ES-CT`). The codes are checked against live Nager.Date responses
-during implementation.
+HU) and an optional `subdivisionCode` for regional holidays (Barcelona
+`ES-CT`, which matters because Easter Monday 2027-03-29 is a Catalonia
+holiday). Nager.Date lists no Lisbon-only holidays, so Lisbon has none. Both
+were checked against live Nager.Date responses on 2026-10-06.
 
 ## 5. One turn
 
@@ -245,7 +247,7 @@ type Conversation = {
 | Agent | `depsKey` built from |
 | --- | --- |
 | budget_policy | cities, days, nights, team |
-| weather_calendar | cities, searchWindow |
+| weather_calendar | cities, searchWindow, days |
 | venues | city, team |
 | itinerary | city, start, days, team |
 
@@ -432,12 +434,13 @@ OpenRouter `GET /key`, configured models still listed with tool support),
   The first implementation task checks latency and tool calling for the
   defaults and reorders them if needed.
 - Fallback is our own loop, not OpenRouter's `models` parameter, so every
-  attempt is visible in the chat. On 429, 502, 503, 408 or an empty reply, emit
-  `llm_call` with the status and try the next model at once. When the list is
-  exhausted, wait (`Retry-After`, else 2 s, then 6 s) and run the list once
-  more. Then fail the call.
-- No retry on 400, 401, 402 or 403; the error names the fix (for example "check
-  OPENROUTER_API_KEY").
+  attempt is visible in the chat. On 429, 5xx, 408, a network error, an empty
+  reply, or a 400 or 404 that one model cannot serve, emit `llm_call` with the
+  status and try the next model at once. When the list is exhausted, wait
+  (`Retry-After`, capped at 10 s, else 2 s) and run the list once more. Then
+  fail the call.
+- 401, 402 and 403 are account-level: no retry, no fallback, and the error
+  names the fix (for example "check OPENROUTER_API_KEY").
 - A local limiter allows `LLM_REQUESTS_PER_MINUTE` (default 15) attempts per
   rolling minute and queues the rest, emitting `llm_wait`.
 - Requests send `reasoning: { effort: "low" }` and generous `max_tokens`. An
