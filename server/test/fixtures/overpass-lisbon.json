@@ -1,0 +1,14 @@
+{
+  "elements": [
+    { "type": "node", "id": 1831989609, "lat": 38.72357, "lon": -9.12925, "tags": { "amenity": "restaurant", "cuisine": "portuguese", "diet:kosher": "yes", "name": "Olha que Dois" } },
+    { "type": "node", "id": 6124516487, "lat": 38.71032, "lon": -9.13969, "tags": { "amenity": "restaurant", "diet:gluten_free": "yes", "diet:vegan": "only", "name": "Organi Chiado", "wheelchair": "yes" } },
+    { "type": "node", "id": 10924175605, "lat": 38.71838, "lon": -9.15226, "tags": { "amenity": "cafe", "diet:gluten_free": "yes", "diet:vegan": "yes", "name": "AMUN Café", "wheelchair": "yes" } },
+    { "type": "node", "id": 4256789936, "lat": 38.71024, "lon": -9.14397, "tags": { "amenity": "restaurant", "diet:gluten_free": "yes", "diet:vegan": "only", "name": "Ao 26", "wheelchair": "no" } },
+    { "type": "node", "id": 2067078666, "lat": 38.73738, "lon": -9.16342, "tags": { "amenity": "restaurant", "diet:vegan": "yes", "name": "Restaurante Greenpepper" } },
+    { "type": "node", "id": 1801653047, "lat": 38.71212, "lon": -9.13373, "tags": { "name": "Miradouro do Castelo de São Jorge", "tourism": "viewpoint", "wheelchair": "yes" } },
+    { "type": "node", "id": 5446794769, "lat": 38.71299, "lon": -9.13421, "tags": { "name": "Miradouro do Castelo de São Jorge", "tourism": "viewpoint", "wheelchair": "yes" } },
+    { "type": "node", "id": 5470684964, "lat": 38.71668, "lon": -9.14891, "tags": { "name": "Figueira-da-Austrália", "tourism": "attraction", "wheelchair": "yes" } },
+    { "type": "node", "id": 4804718021, "lat": 38.70862, "lon": -9.13879, "tags": { "name": "Museu do Dinheiro", "tourism": "museum", "wheelchair": "yes" } },
+    { "type": "way", "id": 99, "center": { "lat": 38.7, "lon": -9.1 }, "tags": { "amenity": "restaurant" } }
+  ]
+}
