@@ -308,9 +308,6 @@ The itinerary writer may submit at most twice: draft, read the code's
 problems, fix, resubmit. After the second submission the last plan is kept and
 its problems are reported (evaluator-optimizer pattern).
 
-- Limits: 3 tool rounds per agent, 2 itinerary submissions, 90 s for the agent
-  phase.
-
 ### Agent instructions (outline)
 
 All agents: use only your tools, never compute or invent numbers, report gaps
@@ -458,7 +455,7 @@ OpenRouter `GET /key`, configured models still listed with tool support),
 
 - A failed or timed-out agent marks its group with a warning; the other agents
   and the answer continue; the answer names what is missing.
-- Limits: 3 tool rounds per agent, 2 itinerary submissions, 45 s for the agent
+- Limits: 3 tool rounds per agent, 2 itinerary submissions, 90 s for the agent
   phase.
 
 ### Public APIs (details in `docs/api-guide.md`)

@@ -11,13 +11,6 @@ Built for the U-BTech "Multi-Agent Chat Challenge" (Full Stack Engineer).
 The original brief is `docs/assignment-brief.pdf` (kept local, gitignored). If
 this file and the PDF disagree, the PDF wins.
 
-## Status
-
-Greenfield. No design yet. The workflow is superpowers: brainstorming, then a
-design spec in `docs/superpowers/specs/`, then an implementation plan in
-`docs/superpowers/plans/`, then the build. Once the spec is approved, fill in
-the "Architecture" and "Commands" sections below and remove this paragraph.
-
 ## Hard requirements (from the brief)
 
 - **Multi-agent.** An orchestrator plus at least two specialist agents, each
@@ -80,6 +73,21 @@ the "Architecture" and "Commands" sections below and remove this paragraph.
   real customer system would replace that one module (REST API or MCP server).
 - **Runs locally.** No cloud deployment; the panel must be able to clone and
   run it.
+
+## Architecture
+
+See `README.md` ("How it works") and the spec in `docs/superpowers/specs/`. Server code is in
+`server/src/` (orchestrator, agents, tools, domain, data, clients, llm, state); the React app is in
+`web/src/`; shared types are in `shared/`.
+
+## Commands
+
+- `npm install && npm start`: build the UI and serve everything on http://localhost:3000
+- `npm run dev`: server plus Vite with hot reload on http://localhost:5173
+- `npm test` / `npm run typecheck`: unit tests and type checks (no network)
+- `npm run warm-cache`: cache the demo's public API data
+- `npm run eval [-- --scenario demo] [--trials 3]`: scenario evals against the real model
+- `npm run check-models`: one tool call per configured model
 
 ## Data sources
 
