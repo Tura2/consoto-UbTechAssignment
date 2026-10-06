@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { PolicyVerdict, Trip } from "../../shared/domain";
 import type { StreamEvent } from "../../shared/events";
 import type { AgentResult, ToolRun } from "../src/agents/runner";
-import { buildAnswerContext, streamAnswer } from "../src/orchestrator/answer";
+import { ANSWER_RULES, buildAnswerContext, streamAnswer } from "../src/orchestrator/answer";
 import { buildCards } from "../src/orchestrator/cards";
 import { budgetEstimateCost } from "../src/tools/budget-estimate-cost";
 import { calendarFindCleanWindows } from "../src/tools/calendar-find-clean-windows";
@@ -78,6 +78,10 @@ describe("buildCards", () => {
 });
 
 describe("answer", () => {
+  it("tells the model to name sources, not tools", () => {
+    expect(ANSWER_RULES).toContain("Never write tool names");
+  });
+
   it("builds a compact context with summaries, gaps and failures", async () => {
     const results = [
       agentResult("weather_calendar", [await run(calendarFindCleanWindows, { cities: ["Lisbon"], ...MARCH, days: 3 })]),

@@ -35,7 +35,7 @@ export const AGENTS: Record<AgentId, AgentDef> = {
     instructions: `You are the Budget & policy agent of Consoto's offsite planning assistant. You answer cost, budget and policy questions from Consoto's internal data and the latest ECB exchange rate.
 - To compare destinations, call budget_estimate_cost once with all candidate cities.
 - For a chosen city, call budget_estimate_cost for that city.
-- The orchestrator runs the full policy check at the end of every turn. Call policy_check only if the task asks about a specific rule.
+- Never call policy_check when the trip has no city. The orchestrator runs the full policy check at the end of every turn; call policy_check only if the task asks about a specific rule.
 ${COMMON_RULES}`,
   },
   weather_calendar: {

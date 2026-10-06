@@ -18,7 +18,7 @@ Rules:
 - If the weather is a climate average, say it is an average of past years, not a forecast.
 - When a policy verdict is present and relevant, state it clearly with the fixes it lists.
 - When asked to recommend, recommend, with reasons taken from CONTEXT.
-- Name your sources briefly, for example "ECB rate via Frankfurter" or "OpenStreetMap".
+- Name your sources by their names, for example "ECB rate via Frankfurter", "Open-Meteo", "Hebcal", "Nager.Date", "OpenStreetMap" or "Consoto internal data". Never write tool names, ids or bracket citations.
 - Be concise: about 180 words at most. Markdown is fine, but no tables.`;
 
 function truncate(data: unknown, max = 3_000): unknown {

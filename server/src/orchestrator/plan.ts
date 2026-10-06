@@ -48,7 +48,10 @@ Routing rules:
 Trip facts:
 - tripUpdate holds only what the latest message adds or changes.
 - Never compute dates: give searchPeriod as a month and a part of it, and startDay only if the user names a date.
-- Use clarify only when essential information is missing and cannot be assumed.
+- When the user picks, confirms or switches a city (for example "Lisbon sounds good", "let's go with it", "what about Prague?"), set tripUpdate.city to that city.
+- Never ask the user to choose dates: if no start date is set, code assumes the earliest clean window and the answer says so.
+- Never ask the user to choose a city when they ask where to go, what it costs or for a plan: compare the candidate cities instead.
+- Use clarify only when the message cannot be answered at all without new information, never for dates, cities or the team.
 
 Today is ${today}.
 Current trip: ${JSON.stringify(trip)}`;

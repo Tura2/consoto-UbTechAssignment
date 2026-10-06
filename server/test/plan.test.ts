@@ -61,6 +61,8 @@ describe("plannerSystemPrompt", () => {
     const prompt = plannerSystemPrompt(newTrip(), "2026-10-06");
     for (const id of ["budget_policy", "weather_calendar", "venues", "itinerary"]) expect(prompt).toContain(id);
     expect(prompt).toContain("Never compute dates");
+    expect(prompt).toContain("Never ask the user to choose dates");
+    expect(prompt).toContain("set tripUpdate.city");
     expect(prompt).toContain("Today is 2026-10-06");
   });
 });
