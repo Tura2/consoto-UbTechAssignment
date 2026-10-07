@@ -37,9 +37,9 @@ export type LlmCaller = "planner" | "answer" | AgentId;
 
 export type StreamEvent =
   | { type: "turn_start"; conversationId: string; turnId: string }
-  | { type: "plan"; agents: { agent: AgentId; task: string }[]; reason: string; trip: Trip; clarify: string | null }
+  | { type: "plan"; agents: { agent: AgentId; task: string }[]; reason: string; trip: Trip; clarify: string | null; ms: number }
   | { type: "agent_start"; agent: AgentId; task: string }
-  | { type: "agent_end"; agent: AgentId; status: "ok" | "error" | "timeout"; summary: string }
+  | { type: "agent_end"; agent: AgentId; status: "ok" | "error" | "timeout"; summary: string; ms: number }
   | { type: "tool_start"; callId: string; owner: StepOwner; tool: string; input: unknown }
   | {
       type: "tool_end";
@@ -68,6 +68,9 @@ export type StreamEvent =
   | { type: "turn_end"; status: "done" | "stopped" | "error"; llmCalls: number; ms: number; error: string | null };
 
 export type Emit = (event: StreamEvent) => void;
+
+// One saved conversation in the History list.
+export type ConversationSummary = { id: string; title: string; updatedAt: string; turns: number };
 
 export type HealthInfo = {
   keyValid: boolean | null;

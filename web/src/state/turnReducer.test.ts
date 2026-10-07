@@ -4,13 +4,13 @@ import { applyEvent, newTurn, turnFromEvents } from "./turnReducer";
 
 const EVENTS: StreamEvent[] = [
   { type: "turn_start", conversationId: "c1", turnId: "t1" },
-  { type: "plan", agents: [{ agent: "venues", task: "Food" }], reason: "Food question.", trip: {} as never, clarify: null },
+  { type: "plan", agents: [{ agent: "venues", task: "Food" }], reason: "Food question.", trip: {} as never, clarify: null, ms: 1 },
   { type: "agent_start", agent: "venues", task: "Food" },
   { type: "llm_call", who: "venues", model: "m1", attempt: 1, status: "rate_limited", ms: 5, detail: "429", tokens: null },
   { type: "llm_call", who: "venues", model: "m2", attempt: 2, status: "ok", ms: 900, detail: null, tokens: null },
   { type: "tool_start", callId: "x", owner: "venues", tool: "places_find_for_team", input: { city: "Lisbon" } },
   { type: "tool_end", callId: "x", ok: true, summary: "5 places", data: {}, sources: [], gaps: ["No kosher"], cached: true, ms: 40 },
-  { type: "agent_end", agent: "venues", status: "ok", summary: "Found places." },
+  { type: "agent_end", agent: "venues", status: "ok", summary: "Found places.", ms: 1 },
   { type: "answer_delta", text: "Here " },
   { type: "answer_delta", text: "you go." },
   { type: "turn_end", status: "done", llmCalls: 3, ms: 2500, error: null },

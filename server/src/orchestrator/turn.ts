@@ -65,7 +65,7 @@ export async function runTurn(conversation: Conversation, message: string, deps:
     dropStaleFindings(conversation);
     // A plan that names agents can proceed: ask the question only when there is nothing to run.
     const clarify = plan.agents.length === 0 && plan.clarify ? plan.clarify : null;
-    emit({ type: "plan", agents: plan.agents, reason: plan.reason, trip: conversation.trip, clarify });
+    emit({ type: "plan", agents: plan.agents, reason: plan.reason, trip: conversation.trip, clarify, ms: Date.now() - started });
 
     if (clarify) {
       emit({ type: "answer_delta", text: clarify });

@@ -49,6 +49,7 @@ export async function runAgent(args: {
   emit: Emit;
 }): Promise<AgentResult> {
   const { def, ctx, llm, emit } = args;
+  const started = Date.now();
   emit({ type: "agent_start", agent: def.id, task: args.task });
   const tools = new Map(def.tools.map((tool) => [tool.name, tool]));
   const chatTools = def.tools.map((tool) => toChatTool(tool.name, tool.description, tool.input));
@@ -84,14 +85,14 @@ export async function runAgent(args: {
         messages.push({ role: "tool", tool_call_id: run.id, content: forModel(run.result) });
       }
     }
-    emit({ type: "agent_end", agent: def.id, status: "ok", summary });
+    emit({ type: "agent_end", agent: def.id, status: "ok", summary, ms: Date.now() - started });
     return { agent: def.id, status: "ok", summary, toolRuns };
   } catch (error) {
     const timedOut = ctx.signal.aborted && (ctx.signal.reason as Error | undefined)?.name === "TimeoutError";
     if (ctx.signal.aborted && !timedOut) throw error; // the user stopped the turn
     const status = timedOut ? "timeout" : "error";
     const text = timedOut ? "Ran out of time for this turn." : (error as Error).message;
-    emit({ type: "agent_end", agent: def.id, status, summary: text });
+    emit({ type: "agent_end", agent: def.id, status, summary: text, ms: Date.now() - started });
     return { agent: def.id, status, summary: text, toolRuns };
   }
 }
