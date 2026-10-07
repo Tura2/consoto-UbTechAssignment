@@ -55,7 +55,7 @@ Prague?") or a policy break ("make it 4 days").
 | Internal data | Appendix data as JSON files, read through one module | Brief leaves access open; the module is the swap point for a REST API or MCP server later |
 | Deployment | Local only; the panel can clone and run it | No Docker; `npm install && npm start` |
 | Observability | Chat only, with expandable step rows | The brief requires steps in the chat; no separate trace tab |
-| State | In memory per conversation | One user, no login; survives page refresh while the server runs |
+| State | In memory per conversation, saved to `.cache/conversations/<id>.json` after every turn | One user, no login; survives a page refresh and a server restart, and feeds the History list |
 | Weekend rule | None; label days that fall on the Israeli weekend (Fri, Sat) | The brief has no weekend rule |
 | Israeli holiday rule | Every Hebcal item from major, minor and modern holidays (Israel schedule) blocks its date; minor fast days are excluded | Simple and cautious reading of policy rule 3 |
 | Tests | Unit tests for code logic, plus a scenario eval script | Proves numbers live in code; the brief points to evals |
@@ -117,7 +117,7 @@ server/src/
   data/consoto-data.ts  getTeam, getPolicy, getCityCosts, listCities
   clients/              http.ts, data-sources.ts, open-meteo.ts, frankfurter.ts, nager.ts, hebcal.ts, overpass.ts
   llm/                  openrouter.ts (limiter, fallback, retries), schema.ts (zod to JSON schema)
-  state/                conversations.ts (in-memory store)
+  state/                conversations.ts (store, saved as JSON files)
   scripts/              warm-cache.ts, eval.ts, check-models.ts
   evals/                scenarios.ts, graders.ts
 server/test/            unit tests (vitest) and fixtures recorded from live API calls
@@ -170,7 +170,7 @@ were checked against live Nager.Date responses on 2026-10-06.
 
 ## 5. One turn
 
-Conversation state, in memory, keyed by `conversationId` (kept in the browser
+Conversation state, in memory and saved to disk after every turn, keyed by `conversationId` (kept in the browser
 URL):
 
 ```ts
@@ -189,6 +189,7 @@ type Conversation = {
   trip: Trip;
   findings: Partial<Record<AgentId, { depsKey: string; result: AgentResult }>>;
   turns: Turn[];                          // user message, events, answer text, status
+  updatedAt: string;                      // ISO time of the last save
   activeTurn: AbortController | null;
 };
 ```
@@ -537,8 +538,8 @@ and a note that accounts without credits get 50 free requests per day);
 architecture diagram; agents table; how the orchestrator decides; model vs code
 responsibilities; failure handling; assumptions; trade-offs (files vs REST or
 MCP, planner vs agents-as-tools, our fallback loop vs OpenRouter's `models`,
-in-memory state); what we would do next (internal data as an MCP server,
-persistent state, a trace view or OpenTelemetry export, CI, more teams and
+JSON-file state); what we would do next (internal data as an MCP server,
+a database for conversations, a trace view or OpenTelemetry export, CI, more teams and
 cities); "Adding a tool" in three steps (create the tool file, add it to one
 agent's tool list, add a unit test); how to run the evals; data attribution
 (OpenStreetMap contributors, Open-Meteo, Hebcal, ECB via Frankfurter,

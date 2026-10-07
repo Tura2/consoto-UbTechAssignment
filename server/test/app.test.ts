@@ -32,8 +32,8 @@ function greetingLlm(hangFirstCall = false): Llm {
 let server: Server | null = null;
 afterEach(() => server?.close());
 
-async function start(llm: Llm): Promise<string> {
-  const app = createApp({ store: createStore(newTrip), turnDeps: { llm, data: fakeData(), today: () => "2026-10-06" }, health: async () => HEALTH, webDist: null });
+async function start(llm: Llm, store = createStore(newTrip)): Promise<string> {
+  const app = createApp({ store, turnDeps: { llm, data: fakeData(), today: () => "2026-10-06" }, health: async () => HEALTH, webDist: null });
   const listening = app.listen(0);
   server = listening;
   if (!listening.address()) await new Promise((resolve) => listening.once("listening", resolve));
@@ -81,6 +81,18 @@ describe("HTTP API", () => {
     expect(conversation.turns).toHaveLength(1);
     expect(conversation.turns[0]).toMatchObject({ userMessage: "Hi", answer: "Hi Maya.", status: "done" });
     expect((await fetch(`${base}/api/conversations/nope`)).status).toBe(404);
+  });
+
+  it("lists conversations that have turns, newest first", async () => {
+    const store = createStore(newTrip);
+    store.getOrCreate("empty");
+    const base = await start(greetingLlm(), store);
+    const { conversationId: older } = firstEvent(await (await post(base, { message: "First" })).text());
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    const { conversationId: newer } = firstEvent(await (await post(base, { message: "Second" })).text());
+    const { conversations } = await (await fetch(`${base}/api/conversations`)).json();
+    expect(conversations.map((c: { id: string }) => c.id)).toEqual([newer, older]);
+    expect(conversations[0]).toMatchObject({ title: "Second", turns: 1 });
   });
 
   it("serves the agent catalog and the health check", async () => {

@@ -17,7 +17,7 @@ try {
 
 const health = createHealthCheck(config.apiKey, config.models);
 const app = createApp({
-  store: createStore(newTrip),
+  store: createStore(newTrip, { dir: path.join(config.cacheDir, "conversations") }),
   turnDeps: createRuntime(config).turnDeps,
   health,
   webDist: path.join(ROOT_DIR, "web", "dist"),

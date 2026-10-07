@@ -48,10 +48,15 @@ export function createApp(deps: AppDeps): express.Express {
     try {
       await runTurn(conversation, body.data.message, deps.turnDeps, (event) => write(`data: ${JSON.stringify(event)}\n\n`), controller.signal);
     } finally {
+      deps.store.save(conversation);
       clearInterval(ping);
       if (conversation.active === controller) conversation.active = null;
       res.end();
     }
+  });
+
+  app.get("/api/conversations", (_req, res) => {
+    res.json({ conversations: deps.store.list() });
   });
 
   app.get("/api/conversations/:id", (req, res) => {

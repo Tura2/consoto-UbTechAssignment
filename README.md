@@ -107,11 +107,12 @@ Every tool is one file in `server/src/tools/` with a zod input schema, a descrip
 | Route | What it does |
 | --- | --- |
 | `POST /api/chat` | `{ conversationId?, message }` in; a `text/event-stream` of typed events out (`plan`, `agent_start`, `tool_start`, `tool_end`, `llm_call`, `llm_wait`, `card`, `answer_delta`, `turn_end`) |
+| `GET /api/conversations` | `{ conversations: [{ id, title, updatedAt, turns }] }`, newest first, for the History list |
 | `GET /api/conversations/:id` | The turns and events of a conversation, for reloading |
 | `GET /api/health` | Key status, free requests left today, configured models (uses no LLM requests) |
 | `GET /api/agents` | The agent catalog shown in "How it works" |
 
-Conversation state lives in server memory: the messages, the trip facts, and the latest result from each agent. One turn runs per conversation at a time.
+Conversation state lives in server memory: the messages, the trip facts, and the latest result from each agent. One turn runs per conversation at a time. After every turn the conversation is also saved under `.cache/conversations` and listed under History in the UI. To prepare the demo, run it once and it appears under History. Delete the folder to start clean.
 
 ## Assumptions
 
@@ -142,13 +143,13 @@ Conversation state lives in server memory: the messages, the trip facts, and the
 - **Files, not an API, for Consoto's data.** The brief leaves access open. One module is the only reader, so a real customer system (a REST API or an MCP server) replaces that module and nothing else.
 - **A planner plus code, not agents-as-tools.** One LLM call decides the routing, and code runs it. That gives fewer LLM calls, predictable parallelism, and a routing decision that is easy to show and test. It is less free-form than letting the orchestrator call agents in a loop.
 - **Our own fallback loop, not OpenRouter's `models` parameter.** It costs a little more code, but every rate limit and fallback is visible in the chat.
-- **In-memory state.** Fine for one user and a demo, but lost on restart.
+- **Conversations as JSON files.** Saved after every turn so a restart keeps them. Fine for one user and a demo, with no locking and no history limit.
 - **OpenStreetMap tags.** Coverage is uneven (Lisbon has one kosher-tagged place), so gaps are reported rather than hidden.
 
 ## What I would do next
 
 - Serve Consoto's data through an MCP server, so other assistants can use it too.
-- Persist conversations (SQLite or Postgres) and add sign-in.
+- Move conversations from JSON files to a database (SQLite or Postgres) and add sign-in.
 - Export traces to OpenTelemetry or Langfuse, plus a trace view for engineers.
 - Add CI (GitHub Actions) for type checks and unit tests, and run the evals nightly.
 - Support more teams and cities, and real flight and hotel prices.
