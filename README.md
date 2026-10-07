@@ -11,7 +11,7 @@ You need Node.js 22 or newer and a free OpenRouter key from https://openrouter.a
 ```bash
 git clone <this repo> consoto-offsite-assistant
 cd consoto-offsite-assistant
-cp .env.example .env          # then paste your key into OPENROUTER_API_KEY
+cp .env.example .env          # then paste your key into OPENROUTER_API_KEY (Windows cmd: copy .env.example .env)
 npm install
 npm start                     # builds the UI and serves everything on http://localhost:3000
 ```
@@ -35,7 +35,7 @@ flowchart TD
   ORCH --> IW["Itinerary writer"]
   ORCH -- "code, no model" --> PC["policy_check + cards"]
   ORCH -- "1 LLM call, streamed" --> ANS["Answer"]
-  BP --> T1["budget_estimate_cost, budget_get_team, policy_check"]
+  BP --> T1["budget_estimate_cost, budget_get_team"]
   WC --> T2["calendar_find_clean_windows, weather_get_outlook"]
   VS --> T3["places_find_for_team"]
   IW --> T4["itinerary_submit_plan"]
@@ -58,7 +58,7 @@ flowchart TD
 
 | Agent | Tools | Data |
 | --- | --- | --- |
-| Budget & policy | `budget_estimate_cost`, `budget_get_team`, `policy_check` | Consoto team, policy and costs; Frankfurter ECB rate |
+| Budget & policy | `budget_estimate_cost`, `budget_get_team` | Consoto team, policy and costs; Frankfurter ECB rate |
 | Weather & calendar | `calendar_find_clean_windows`, `weather_get_outlook` | Hebcal (Israel), Nager.Date (destination), Open-Meteo |
 | Venues scout | `places_find_for_team` | OpenStreetMap through Overpass |
 | Itinerary writer | `itinerary_submit_plan` | Only the venues the scout found; code checks every draft |
@@ -91,7 +91,7 @@ Every tool is one file in `server/src/tools/` with a zod input schema, a descrip
 
 ### Failures
 
-- **Rate limits.** We cap ourselves at 15 LLM requests per minute, under OpenRouter's 20. On a 429, the next model in `OPENROUTER_MODELS` takes over at once. When every model is busy, we wait (the `Retry-After` value, or 2 s) and try once more, then report it. Every attempt shows in the chat.
+- **Rate limits.** We cap ourselves at 15 LLM requests per minute, under OpenRouter's 20. On a 429, the next model in `OPENROUTER_MODELS` takes over at once (except OpenRouter's free daily cap, which stops the turn with a clear message, since no other model can help). A reply cut off by the token limit also counts as a failed attempt and falls to the next model. When every model is busy, we wait (the `Retry-After` value, or 2 s) and try once more, then report it. Every attempt shows in the chat.
 - **Account problems.** A bad key or missing credits stops at once with a message that says what to fix.
 - **Broken answers.** A stream that breaks after text arrived keeps the partial text and offers "Try again".
 - **Public APIs.** One shared HTTP helper handles all of them:
@@ -134,7 +134,8 @@ Conversation state lives in server memory: the messages, the trip facts, and the
 
 1. Create `server/src/tools/<agent>-<what>.ts` with `defineTool({ name, description, input, execute })`. Return `ok(...)` or `fail(...)`, and add `sources` and `gaps`.
 2. Add it to one agent's `tools` list in `server/src/agents/registry.ts`. If it needs a new agent, add the agent there too; the planner and "How it works" read the registry.
-3. Add a unit test next to the others in `server/test/`, using `makeCtx()` and `fakeData()`.
+3. If the tool needs a new public API, add a client in `server/src/clients/` that calls `http.getJson` (cache, timeouts, retries and User-Agent come with it), add a method for it in `server/src/clients/data-sources.ts`, and add a fake to `server/test/helpers/fake-data.ts`. Never call `fetch` directly.
+4. Add a unit test next to the others in `server/test/`, using `makeCtx()` and `fakeData()`.
 
 ## Trade-offs
 

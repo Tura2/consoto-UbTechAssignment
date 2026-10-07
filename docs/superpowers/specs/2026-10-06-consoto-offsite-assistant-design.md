@@ -102,26 +102,26 @@ Public APIs and OpenRouter
 ```text
 package.json            npm workspaces (server, web) and root scripts
 .env.example            OPENROUTER_API_KEY, OPENROUTER_MODELS, PORT, LLM_REQUESTS_PER_MINUTE
-shared/                 types only, imported with `import type`: domain.ts (trip, results), events.ts (stream events, cards, API payloads)
+shared/                 domain.ts (trip, results) and events.ts (stream events, cards, API payloads), types only; text.ts (cleanAnswer, the one runtime import)
 server/src/
   index.ts              entry point: loads .env, config, starts the server, prints the health check
   app.ts                Express routes: POST /api/chat (SSE), GET /api/conversations/:id, /api/health, /api/agents, static web/dist
   config.ts             reads and validates env
   health.ts, runtime.ts OpenRouter health check; builds the real dependencies
   orchestrator/         plan.ts, trip.ts, turn.ts, answer.ts, cards.ts, tool-data.ts
-  agents/               budget-policy.ts, weather-calendar.ts, venues.ts, itinerary.ts, registry.ts, runner.ts
-  tools/                one file per tool + registry.ts + types.ts (ToolResult)
+  agents/               registry.ts (the four agents, their instructions and tools), ids.ts, runner.ts
+  tools/                one file per tool + helpers.ts + types.ts (ToolResult)
   domain/               cost.ts, policy.ts, dates.ts, climate.ts, places.ts, itinerary-check.ts
   data/consoto/         team.json, policy.json, costs.json (appendix, verbatim)
   data/reference/       destinations.json (country and subdivision codes; not from the appendix)
   data/consoto-data.ts  getTeam, getPolicy, getCityCosts, listCities
-  clients/              http.ts, open-meteo.ts, frankfurter.ts, nager.ts, hebcal.ts, overpass.ts
+  clients/              http.ts, data-sources.ts, open-meteo.ts, frankfurter.ts, nager.ts, hebcal.ts, overpass.ts
   llm/                  openrouter.ts (limiter, fallback, retries), schema.ts (zod to JSON schema)
   state/                conversations.ts (in-memory store)
-  scripts/              warm-cache.ts, eval.ts
+  scripts/              warm-cache.ts, eval.ts, check-models.ts
   evals/                scenarios.ts, graders.ts
 server/test/            unit tests (vitest) and fixtures recorded from live API calls
-web/src/                main.tsx, App.tsx, components/, hooks/useChatStream.ts, state/turnReducer.ts
+web/src/                main.tsx, App.tsx, api.ts, sse.ts, demo.ts, format.ts, components/, hooks/useChat.ts, state/turnReducer.ts
 docs/                   research, API guide, specs, plans
 .cache/                 disk cache for API responses (gitignored)
 evals/runs/             eval transcripts (gitignored)
@@ -178,7 +178,7 @@ type Trip = {
   team: string | null;                    // "platform"
   region: string | null;                  // "Europe"
   searchWindow: { from: string; to: string } | null;   // ISO dates, resolved by code
-  candidateCities: string[];              // defaults to all cities with cost data
+  candidateCities: string[];              // cities the user named; otherwise all cities with cost data in the region
   city: string | null;                    // as typed; matched to known cities case-insensitively
   start: { date: string; source: "user" | "assumed" } | null;
   days: number;                           // default 3
@@ -196,7 +196,7 @@ type Conversation = {
 ### Steps
 
 1. **Plan (LLM, forced tool call).** The planner gets the agent catalog, the
-   trip state, the last 10 messages and the new message, and must call
+   trip state, the last 10 messages (stopped or failed turns included, with "(No answer: this turn was stopped or failed.)" as their answer) and the new message, and must call
    `submit_plan` (forced with `tool_choice`). Its input is validated with zod:
 
    ```ts
@@ -220,8 +220,9 @@ type Conversation = {
    last day for `second_half`) and its year; resolve `startDay` to an ISO date
    inside the search window (or the next occurrence of that date if there is no
    window) with `source: "user"`; set `nights = days - 1`; match the city. When
-   a region is set and no candidates are given, `candidateCities` is every city
-   with cost data; a region with no such cities becomes a tool gap. Values that
+   a region is set, code keeps only the `candidateCities` the user named in the
+   message (the planner may invent others); if none remain, `candidateCities`
+   is every city with cost data in the region; a region with no such cities becomes a tool gap. Values that
    break policy are kept as given; the policy check flags them. Findings whose `depsKey` no longer matches the trip are dropped.
    Emit `plan`. If `clarify` is set, stream it as the answer and end the turn.
 3. **Run agents (code).** Independent agents run in parallel. The itinerary
@@ -240,7 +241,9 @@ type Conversation = {
    policy verdict. Rules: use only numbers present in the input; restate at
    most the headline numbers and point to the cards; name every gap; say when a
    date was assumed; cite sources; keep it short. Emit `answer_delta` events,
-   then `turn_end`.
+   then `turn_end`. Code applies `cleanAnswer` (shared/text.ts) to the text: it strips
+   tool-name citations such as `【budget_estimate_cost】` and replaces em and en
+   dashes with a hyphen. The same function runs in the UI while streaming.
 
 ### Findings dependencies
 
@@ -283,10 +286,10 @@ type Source = { name: string; url: string; fetchedAt: string; cached: boolean };
 | --- | --- | --- | --- |
 | Budget & policy | `budget_get_team` | `team` | members, size, needs count (vegan 2, kosher 1, gluten_free 1, wheelchair 1) |
 | | `budget_estimate_cost` | `cities[]`, `days`, `team` | per city: EUR breakdown, EUR and ILS per person, ILS team total, ECB rate and its date, budget fit and headroom |
-| | `policy_check` | none (reads the trip and findings) | rules 1-6 with status, detail and fix; overall verdict |
 | Weather & calendar | `calendar_find_clean_windows` | `cities[]`, `from`, `to`, `days` | Israeli and local holidays with sources; every window with weekdays, clashes, clean flag, Israeli-weekend note |
 | | `weather_get_outlook` | `cities[]`, `from`, `to` | a daily forecast if the whole range is within 16 days, otherwise a labeled climate average and `forecastAvailable: false` with the reason |
 | Venues scout | `places_find_for_team` | `city`, `team` | per need: top places with OSM links and wheelchair status; places covering the most needs; accessible sights; counts; gaps |
+| Orchestrator (code only, no agent) | `policy_check` | none (reads the trip and findings) | rules 1-6 with status, detail and fix; overall verdict |
 | Itinerary writer | `itinerary_submit_plan` | `days[{ date, items[{ slot, kind, venueIds[], catering[], note }] }]` | `accepted`, `problems[]`, `notes[]` from the code check |
 
 Itinerary items: `slot` is `morning`, `lunch`, `afternoon` or `dinner`;
@@ -320,7 +323,8 @@ plainly, end with a 2-3 sentence summary of what you found.
 - Venues scout: finds food and sights that fit the team's needs; never claims
   accessibility or diet coverage that the data does not show.
 - Itinerary writer: drafts the days from the verified venues only and fixes
-  what the check reports.
+  what the check reports. When a draft already exists, it sees the current
+  draft, so "swap day 2 dinner" edits it instead of starting over.
 - Planner: picks the smallest set of agents the message needs. Comparing
   destinations needs budget_policy and weather_calendar. Weather, holidays and
   dates need weather_calendar. Costs, totals and policy need budget_policy.
@@ -412,7 +416,7 @@ OpenRouter `GET /key`, configured models still listed with tool support),
 - Each assistant turn: a compact steps block (collapses after the turn ends),
   then result cards, then the answer. Expanding a step shows raw input and
   output, sources, cache status, model, attempts and fallbacks.
-- Cards: `comparison` (per city: ILS per person, team total, budget fit, clean
+- Cards: once a city is chosen, the cards are built for that city only; `comparison` appears only before a city is chosen (per city: ILS per person, team total, budget fit, clean
   windows, average high, rainy-day share), `dates` (holidays and windows),
   `weather` (forecast or labeled climate average), `cost` (breakdown, rate and
   date), `policy` (rules with status and fixes, overall verdict), `venues`
@@ -438,13 +442,16 @@ OpenRouter `GET /key`, configured models still listed with tool support),
   reply, or a 400 or 404 that one model cannot serve, emit `llm_call` with the
   status and try the next model at once. When the list is exhausted, wait
   (`Retry-After`, capped at 10 s, else 2 s) and run the list once more. Then
-  fail the call.
+  fail the call. A 429 for OpenRouter's free daily cap (`free-models-per-day`)
+  is the exception: no model can help, so it is a fatal error with a clear
+  message.
 - 401, 402 and 403 are account-level: no retry, no fallback, and the error
   names the fix (for example "check OPENROUTER_API_KEY").
 - A local limiter allows `LLM_REQUESTS_PER_MINUTE` (default 15) attempts per
   rolling minute and queues the rest, emitting `llm_wait`.
-- Requests send `reasoning: { effort: "low" }` and generous `max_tokens`. An
-  empty reply with `finish_reason: "length"` counts as `empty`.
+- Requests send `reasoning: { effort: "low" }` and generous `max_tokens` (5000 for
+  the planner). A reply with `finish_reason: "length"` counts as a failed
+  attempt, even if it has text or tool calls, and falls back to the next model.
 - If the answer stream fails midway, the partial text stays and the turn ends
   with `error`; the UI offers "Try again", which resends the message.
 - The answer stream reader checks each chunk for a top-level `error` field, in
@@ -515,7 +522,7 @@ that inspects events, cards, trip state and answer text:
 
 Options: `--scenario <name>`, `--trials <n>` (reports pass^k). Each run prints a
 pass/fail table and saves full transcripts to `evals/runs/` for reading. A full
-run costs roughly 30-40 LLM requests.
+run costs about 50 to 55 LLM requests.
 
 ## 11. README (English)
 
