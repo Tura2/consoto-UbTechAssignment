@@ -89,6 +89,6 @@ describe("agentsInfo", () => {
   it("describes the four agents and their tools", () => {
     const info = agentsInfo();
     expect(info.agents.map((agent) => agent.id)).toEqual(["budget_policy", "weather_calendar", "venues", "itinerary"]);
-    expect(info.agents[0].tools.map((tool) => tool.name)).toEqual(["budget_estimate_cost", "budget_get_team", "policy_check"]);
+    expect(info.agents[0].tools.map((tool) => tool.name)).toEqual(["budget_estimate_cost", "budget_get_team"]);
   });
 });

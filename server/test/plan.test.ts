@@ -63,6 +63,7 @@ describe("plannerSystemPrompt", () => {
     expect(prompt).toContain("Never compute dates");
     expect(prompt).toContain("Never ask the user to choose dates");
     expect(prompt).toContain("set tripUpdate.city");
+    expect(prompt).toContain("candidateCities holds only cities the user named");
     expect(prompt).toContain("Today is 2026-10-06");
   });
 });

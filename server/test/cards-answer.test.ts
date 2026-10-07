@@ -59,6 +59,25 @@ describe("buildCards", () => {
     expect(cards.map((card) => card.kind)).toEqual(["cost", "dates", "weather", "policy"]);
   });
 
+  it("builds the chosen city's cards even when the tools returned every city", async () => {
+    const results = [
+      agentResult("budget_policy", [await run(budgetEstimateCost, { cities: ALL, days: 3, team: "platform" })]),
+      agentResult("weather_calendar", [
+        await run(calendarFindCleanWindows, { cities: ALL, ...MARCH, days: 3 }),
+        await run(weatherGetOutlook, { cities: ALL, ...MARCH }),
+      ]),
+    ];
+    const cards = buildCards({ results, policy: null, showPolicy: false, trip: LISBON_TRIP });
+    expect(cards.map((card) => card.kind)).toEqual(["cost", "dates", "weather"]);
+    expect(cards.map((card) => (card.kind === "cost" ? card.estimate.city : card.kind === "dates" || card.kind === "weather" ? card.city : ""))).toEqual(["Lisbon", "Lisbon", "Lisbon"]);
+  });
+
+  it("builds the comparison card only when no city is chosen", async () => {
+    const results = [agentResult("budget_policy", [await run(budgetEstimateCost, { cities: ALL, days: 3, team: "platform" })])];
+    expect(buildCards({ results, policy: null, showPolicy: false, trip: BASE_TRIP }).map((card) => card.kind)).toEqual(["comparison"]);
+    expect(buildCards({ results, policy: null, showPolicy: false, trip: LISBON_TRIP }).map((card) => card.kind)).toEqual(["cost"]);
+  });
+
   it("adds venues and the itinerary with place names", async () => {
     const results = [
       agentResult("venues", [await run(placesFindForTeam, { city: "Lisbon", team: "platform" })]),
@@ -103,6 +122,12 @@ describe("answer", () => {
     expect(context).toContain("No cost data for Rome");
     expect(context).toContain("Overpass is down");
     expect(context).not.toContain('"windows"');
+  });
+
+  it("names the headroom as per person", async () => {
+    const results = [agentResult("budget_policy", [await run(budgetEstimateCost, { cities: ["Lisbon"], days: 3, team: "platform" })])];
+    const context = buildAnswerContext({ trip: LISBON_TRIP, plan: { tripUpdate: {}, agents: [], reason: "Because." }, results, policy: null });
+    expect(context).toContain('"headroomIlsPerPerson": 964');
   });
 
   it("streams the answer as answer_delta events", async () => {

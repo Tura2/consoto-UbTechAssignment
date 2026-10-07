@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AgentResult } from "../src/agents/runner";
-import { applyTripUpdate, depsKey, dropStaleFindings, newTrip } from "../src/orchestrator/trip";
+import { applyTripUpdate, depsKey, dropStaleFindings, namedCandidates, newTrip } from "../src/orchestrator/trip";
 import { createStore, historyMessages } from "../src/state/conversations";
 
 const TODAY = "2026-10-06";
@@ -93,3 +93,21 @@ describe("conversation store", () => {
     ]);
   });
 });
+
+describe("namedCandidates", () => {
+  it("drops cities the user did not type, so message 1 compares all five region cities", () => {
+    const update = namedCandidates({ ...M1, candidateCities: ["Lisbon", "Prague", "Amsterdam"] }, "We want a 3 day offsite somewhere in Europe.");
+    expect(update.candidateCities).toBeUndefined();
+    expect(applyTripUpdate(newTrip(), update, TODAY).candidateCities).toEqual(["Lisbon", "Barcelona", "Athens", "Prague", "Budapest"]);
+  });
+
+  it("keeps the cities the user named, in any letter case", () => {
+    const update = namedCandidates({ candidateCities: ["Lisbon", "Rome", "Prague"] }, "compare lisbon and ROME");
+    expect(update.candidateCities).toEqual(["Lisbon", "Rome"]);
+  });
+
+  it("leaves an update without candidates alone", () => {
+    expect(namedCandidates({ city: "Lisbon" }, "Lisbon sounds good")).toEqual({ city: "Lisbon", candidateCities: undefined });
+  });
+});
+

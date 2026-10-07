@@ -57,6 +57,13 @@ export function applyTripUpdate(trip: Trip, update: TripUpdate, today: string): 
   return next;
 }
 
+// The planner sometimes invents cities. Keep only the candidates the user typed in this message.
+export function namedCandidates(update: TripUpdate, message: string): TripUpdate {
+  const text = message.toLowerCase();
+  const named = update.candidateCities?.filter((city) => text.includes(city.trim().toLowerCase()));
+  return { ...update, candidateCities: named?.length ? named : undefined };
+}
+
 export function focusCities(trip: Trip): string[] {
   return trip.city ? [trip.city] : trip.candidateCities;
 }

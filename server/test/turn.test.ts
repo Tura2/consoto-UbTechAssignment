@@ -196,4 +196,44 @@ describe("runTurn", () => {
     expect(turn.status).toBe("stopped");
     expect(conversation.trip.start).toBeNull();
   });
+
+  it("stores the cleaned answer on the turn", async () => {
+    const { llm } = scriptedLlm({ planner: [toolCall("submit_plan", { agents: [], reason: "Greeting." })] }, "Lisbon \u2013 sunny \u3010budget_estimate_cost\u3011.");
+    const { turn } = await turnWith(llm, "Hi");
+    expect(turn.answer).toBe("Lisbon - sunny.");
+  });
+
+  it("ignores events that arrive after turn_end", async () => {
+    let lateEmit: Parameters<Llm["complete"]>[1] = () => {};
+    const llm: Llm = {
+      complete: async (_request, emit) => {
+        lateEmit = emit;
+        return { message: toolCall("submit_plan", { agents: [], reason: "Greeting." }), model: "fake" };
+      },
+      stream: async () => ({ text: "", model: "" }),
+    };
+    const { events } = await turnWith(llm, "Hi");
+    const count = events.length;
+    lateEmit({ type: "llm_call", who: "planner", model: "fake", attempt: 1, status: "ok", ms: 1, detail: null, tokens: null });
+    expect(events).toHaveLength(count);
+    expect(events.at(-1)?.type).toBe("turn_end");
+  });
+
+  it("gives the itinerary writer the current draft so a change request edits it", async () => {
+    const first = scriptedLlm({
+      planner: [toolCall("submit_plan", { agents: [{ agent: "itinerary", task: "Draft" }], reason: "You asked for a plan." })],
+      venues: [toolCall("places_find_for_team", { city: "Lisbon", team: "platform" }), text("Found places.")],
+      itinerary: [toolCall("itinerary_submit_plan", GOOD_PLAN), text("Drafted.")],
+    });
+    const { conversation } = await turnWith(first.llm, "Draft the 3 days.", (c) => {
+      c.trip = { ...BASE_TRIP, city: "Lisbon" };
+    });
+    const second = scriptedLlm({
+      planner: [toolCall("submit_plan", { agents: [{ agent: "itinerary", task: "Swap day 2 dinner" }], reason: "You asked for a change." })],
+      itinerary: [toolCall("itinerary_submit_plan", GOOD_PLAN), text("Changed.")],
+    });
+    await runTurn(conversation, "Swap day 2 dinner.", deps(second.llm), () => {}, new AbortController().signal);
+    expect(JSON.stringify(second.requests.find((r) => r.who === "itinerary")?.messages)).toContain("Current draft");
+    expect(JSON.stringify(first.requests.find((r) => r.who === "itinerary")?.messages)).not.toContain("Current draft");
+  });
 });

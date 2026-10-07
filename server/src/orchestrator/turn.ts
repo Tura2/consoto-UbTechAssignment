@@ -2,6 +2,7 @@
 import { randomUUID } from "node:crypto";
 import type { AgentId, PolicyVerdict, VenuesResult } from "../../../shared/domain";
 import type { Emit } from "../../../shared/events";
+import { cleanAnswer } from "../../../shared/text";
 import { AGENTS } from "../agents/registry";
 import { runAgent, type AgentResult } from "../agents/runner";
 import type { DataSources } from "../clients/data-sources";
@@ -18,7 +19,7 @@ import { buildAnswerContext, streamAnswer } from "./answer";
 import { buildCards } from "./cards";
 import { makePlan, type Plan } from "./plan";
 import { lastToolData } from "./tool-data";
-import { applyTripUpdate, depsKey, dropStaleFindings } from "./trip";
+import { applyTripUpdate, depsKey, dropStaleFindings, namedCandidates } from "./trip";
 
 export type TurnDeps = { llm: Llm; data: DataSources; today: () => string; agentPhaseMs?: number };
 
@@ -43,7 +44,10 @@ export async function runTurn(conversation: Conversation, message: string, deps:
   conversation.turns.push(turn);
   const started = Date.now();
   let llmCalls = 0;
+  let ended = false;
   const emit: Emit = (event) => {
+    if (ended) return; // a late event from an abandoned call must not follow turn_end
+    if (event.type === "turn_end") ended = true;
     if (event.type === "llm_call") llmCalls++;
     if (event.type === "answer_delta") turn.answer += event.text;
     turn.events.push(event);
@@ -57,7 +61,7 @@ export async function runTurn(conversation: Conversation, message: string, deps:
     const today = deps.today();
     const plan = await makePlan({ llm: deps.llm, history, message, trip: conversation.trip, today, signal, emit });
     signal.throwIfAborted(); // never change the trip for a turn the user already left
-    conversation.trip = applyTripUpdate(conversation.trip, plan.tripUpdate, today);
+    conversation.trip = applyTripUpdate(conversation.trip, namedCandidates(plan.tripUpdate, message), today);
     dropStaleFindings(conversation);
     emit({ type: "plan", agents: plan.agents, reason: plan.reason, trip: conversation.trip, clarify: plan.clarify ?? null });
 
@@ -76,6 +80,7 @@ export async function runTurn(conversation: Conversation, message: string, deps:
     status = signal.aborted ? "stopped" : "error";
     error = signal.aborted ? null : (caught as Error).message;
   }
+  turn.answer = cleanAnswer(turn.answer);
   turn.status = status;
   emit({ type: "turn_end", status, llmCalls, ms: Date.now() - started, error });
   return turn;
@@ -147,9 +152,11 @@ function itineraryContext(conversation: Conversation): string {
     ? allPlaces(venues).map((place) => ({ id: place.id, name: place.name, kind: place.kind, diets: place.diets, wheelchair: place.wheelchair }))
     : [];
   const team = trip.team ? getTeam(trip.team) : null;
+  const draft = findingsView(conversation).itinerary;
   return [
     `Trip dates: ${trip.start ? datesOf(trip.start.date, trip.days).join(", ") : "not chosen yet"}.`,
     `Team dietary needs: ${team ? teamNeeds(team).diets.join(", ") || "none" : "unknown"}.`,
     `Venues list (use these ids only): ${JSON.stringify(places)}`,
+    ...(draft ? [`Current draft (edit it for change requests, do not start over): ${JSON.stringify(draft.plan)}`] : []),
   ].join("\n");
 }

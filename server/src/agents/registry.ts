@@ -6,7 +6,6 @@ import { budgetGetTeam } from "../tools/budget-get-team";
 import { calendarFindCleanWindows } from "../tools/calendar-find-clean-windows";
 import { itinerarySubmitPlan } from "../tools/itinerary-submit-plan";
 import { placesFindForTeam } from "../tools/places-find-for-team";
-import { policyCheck } from "../tools/policy-check";
 import type { AnyTool } from "../tools/types";
 import { weatherGetOutlook } from "../tools/weather-get-outlook";
 
@@ -31,12 +30,10 @@ export const AGENTS: Record<AgentId, AgentDef> = {
     name: "Budget & policy",
     purpose: "Costs per person and per team in EUR and ILS at the latest ECB rate, team data, and Consoto's offsite policy.",
     maxRounds: 3,
-    tools: [budgetEstimateCost, budgetGetTeam, policyCheck],
+    tools: [budgetEstimateCost, budgetGetTeam],
     instructions: `You are the Budget & policy agent of Consoto's offsite planning assistant. You answer cost, budget and policy questions from Consoto's internal data and the latest ECB exchange rate.
-- To compare destinations, call budget_estimate_cost once with all candidate cities.
-- When comparing destinations, pass every city in the trip's candidateCities in one call.
-- For a chosen city, call budget_estimate_cost for that city.
-- Never call policy_check when the trip has no city. The orchestrator runs the full policy check at the end of every turn; call policy_check only if the task asks about a specific rule.
+- When the trip has no chosen city and the task compares destinations, call budget_estimate_cost once with every city in candidateCities.
+- When the trip has a chosen city, call budget_estimate_cost for that city only, unless the task names others.
 ${COMMON_RULES}`,
   },
   weather_calendar: {
@@ -47,7 +44,7 @@ ${COMMON_RULES}`,
     tools: [calendarFindCleanWindows, weatherGetOutlook],
     instructions: `You are the Weather & calendar agent of Consoto's offsite planning assistant. You find holidays in Israel and at the destination, the clean date windows, and the weather outlook.
 - Call both tools in the same round, for all the requested cities, using the trip's search window and length.
-- When comparing destinations, pass every city in the trip's candidateCities in one call.
+- When the trip has no chosen city and the task compares destinations, pass every city in candidateCities in one call. When the trip has a chosen city, pass only that city unless the task names others.
 - If there is no forecast, say the weather is a climate average of past years, not a forecast.
 ${COMMON_RULES}`,
   },

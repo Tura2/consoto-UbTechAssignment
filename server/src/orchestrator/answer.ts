@@ -45,7 +45,7 @@ export function compactForAnswer(tool: string, data: unknown): unknown {
           perPersonIls: e.perPersonIls,
           teamTotalIls: e.teamTotalIls,
           withinBudget: e.withinBudget,
-          headroomIls: e.headroomIls,
+          headroomIlsPerPerson: e.headroomIls,
         })),
       };
     }

@@ -48,6 +48,7 @@ Routing rules:
 
 Trip facts:
 - tripUpdate holds only what the latest message adds or changes.
+- candidateCities holds only cities the user named in the latest message. Leave it out when they named none.
 - Never compute dates: give searchPeriod as a month and a part of it, and startDay only if the user names a date.
 - When the user picks, confirms or switches a city (for example "Lisbon sounds good", "let's go with it", "what about Prague?"), set tripUpdate.city to that city.
 - Never ask the user to choose dates: if no start date is set, code assumes the earliest clean window and the answer says so.
@@ -90,7 +91,7 @@ export async function makePlan(args: {
         messages,
         tools: [SUBMIT_PLAN],
         toolChoice: { type: "function", function: { name: "submit_plan" } },
-        maxTokens: 2_000,
+        maxTokens: 5_000,
         signal: args.signal,
       },
       args.emit,

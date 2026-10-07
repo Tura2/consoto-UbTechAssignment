@@ -17,17 +17,16 @@ export function buildCards(args: { results: AgentResult[]; policy: PolicyVerdict
   const itinerary = lastToolData<ItineraryData>(results, "itinerary_submit_plan");
   const cards: Card[] = [];
 
-  const cityCount = Math.max(cost?.estimates.length ?? 0, calendar?.cities.length ?? 0, weather?.cities.length ?? 0);
-  if (cityCount > 1) {
-    cards.push(comparisonCard(cost, calendar, weather, trip));
-  } else {
-    if (cost?.estimates[0]) cards.push({ kind: "cost", estimate: cost.estimates[0] });
-    const dates = calendar?.cities[0];
-    if (calendar && dates) {
-      cards.push({ kind: "dates", city: dates.city, from: calendar.from, to: calendar.to, holidays: dates.holidays, windows: dates.windows });
-    }
-    const outlook = weather?.cities[0];
+  if (trip.city) {
+    const estimate = cost?.estimates.find((entry) => entry.city === trip.city);
+    const dates = calendar?.cities.find((entry) => entry.city === trip.city);
+    const outlook = weather?.cities.find((entry) => entry.city === trip.city);
+    if (estimate) cards.push({ kind: "cost", estimate });
+    if (calendar && dates) cards.push({ kind: "dates", city: dates.city, from: calendar.from, to: calendar.to, holidays: dates.holidays, windows: dates.windows });
     if (outlook) cards.push({ kind: "weather", city: outlook.city, outlook: outlook.outlook });
+  } else {
+    const cityCount = Math.max(cost?.estimates.length ?? 0, calendar?.cities.length ?? 0, weather?.cities.length ?? 0);
+    if (cityCount > 1) cards.push(comparisonCard(cost, calendar, weather, trip));
   }
   if (venues) cards.push({ kind: "venues", result: venues });
   if (itinerary && trip.city) {
