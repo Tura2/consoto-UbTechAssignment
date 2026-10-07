@@ -18,7 +18,9 @@ export function tripSummary(trip: Trip): TripSummary | null {
   let dates: string | null = null;
   if (trip.start) dates = `${range(trip.start.date, addDays(trip.start.date, trip.days - 1))}${trip.start.source === "assumed" ? " (assumed)" : ""}`;
   else if (trip.searchWindow) dates = `${range(trip.searchWindow.from, trip.searchWindow.to)} (search window)`;
-  return { team: trip.team, place, dates, length: `${trip.days} days / ${trip.nights} nights` };
+  // Team ids are lower case ("platform"); show them as names.
+  const team = trip.team ? trip.team.charAt(0).toUpperCase() + trip.team.slice(1) : null;
+  return { team, place, dates, length: `${trip.days} days / ${trip.nights} nights` };
 }
 
 // The trip from the most recent plan, or null before the first plan arrives.

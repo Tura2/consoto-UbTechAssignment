@@ -21,7 +21,7 @@ export function App() {
   const last = chat.turns[chat.turns.length - 1];
   useEffect(() => {
     if (followRef.current) endRef.current?.scrollIntoView({ block: "end" });
-  }, [chat.turns.length, last?.answer.length, last?.steps.length, last?.cards.length, last?.plan, last?.agents.length]);
+  }, [chat.turns.length, last?.answer.length, last?.steps.length, last?.cards.length, last?.plan, last?.agents.length, last?.status]);
   // Follow the stream until the user scrolls up, so reading or expanding a step mid-stream does not jump.
   const onScroll = (event: UIEvent<HTMLElement>) => {
     followRef.current = keepFollowing(followRef.current, lastTopRef.current, event.currentTarget);

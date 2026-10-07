@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Trip } from "../../shared/domain";
 import { changedFields, latestTrip, tripSummary } from "./trip";
 
-const TRIP: Trip = { team: "Platform", region: "Europe", searchWindow: { from: "2027-03-16", to: "2027-03-31" }, candidateCities: ["Lisbon", "Prague"], city: null, start: null, days: 3, nights: 2 };
+const TRIP: Trip = { team: "platform", region: "Europe", searchWindow: { from: "2027-03-16", to: "2027-03-31" }, candidateCities: ["Lisbon", "Prague"], city: null, start: null, days: 3, nights: 2 };
 
 describe("tripSummary", () => {
   it("is null until the plan knows something about the trip", () => {

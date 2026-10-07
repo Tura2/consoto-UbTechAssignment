@@ -45,15 +45,15 @@ export function fakeData(overrides: Partial<DataSources> = {}): DataSources {
     geocode: async (city) => {
       const point = POINTS[city];
       if (!point) throw new Error(`Open-Meteo geocoding found no "${city}"`);
-      return { ...point, source: fakeSource("Open-Meteo geocoding") };
+      return { ...point, source: fakeSource("Open-Meteo (geocoding)") };
     },
     forecast: async (_point, from) => ({
       days: [{ date: from, highC: 20, lowC: 12, rainChancePct: 10 }],
-      source: fakeSource("Open-Meteo forecast"),
+      source: fakeSource("Open-Meteo (forecast)"),
     }),
     archive: async (points, from) => ({
       series: points.map(() => ({ dates: [from], highC: [18], lowC: [10], rainMm: [2] })),
-      source: fakeSource("Open-Meteo historical weather"),
+      source: fakeSource("Open-Meteo (historical weather)"),
     }),
     overpass: async () => ({ elements: overpass.elements, source: fakeSource("OpenStreetMap (Overpass)") }),
     ...overrides,

@@ -3,7 +3,7 @@ import Markdown from "react-markdown";
 import type { LlmCaller } from "../../../shared/events";
 import { cleanAnswer } from "../../../shared/text";
 import { AGENT_NAMES, seconds, shortModel } from "../format";
-import { uniqueSources } from "../sources";
+import { sourceGroups } from "../sources";
 import type { AgentView, StepView, TurnView } from "../state/turnReducer";
 import { CardView } from "./Cards";
 import { Elapsed } from "./Elapsed";
@@ -142,18 +142,19 @@ function AgentTime({ agent }: { agent: AgentView }) {
 
 // The data sources behind this turn's answer, from the tool calls that succeeded.
 function SourcesRow({ turn }: { turn: TurnView }) {
-  const sources = useMemo(() => uniqueSources(turn.steps), [turn.steps]);
-  if (turn.status === "running" || sources.length === 0) return null;
+  const groups = useMemo(() => sourceGroups(turn.steps), [turn.steps]);
+  if (turn.status === "running" || groups.length === 0) return null;
   return (
     <div className="sources">
       <span className="muted">Sources</span>
-      {sources.map((source) =>
-        source.url.startsWith("http") ? (
-          <a key={source.name} className="chip" href={source.url} target="_blank" rel="noreferrer">{source.name}</a>
+      {groups.map((group) => {
+        const title = group.details.join(", ") || undefined;
+        return group.url ? (
+          <a key={group.provider} className="chip" href={group.url} target="_blank" rel="noreferrer" title={title}>{group.provider}</a>
         ) : (
-          <span key={source.name} className="chip">{source.name}</span>
-        ),
-      )}
+          <span key={group.provider} className="chip" title={title}>{group.provider}</span>
+        );
+      })}
     </div>
   );
 }

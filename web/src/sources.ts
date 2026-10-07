@@ -1,15 +1,21 @@
-// The sources behind a turn's answer: unique by name, from tool calls that succeeded.
-import type { Source } from "../../shared/domain";
+// The sources behind a turn's answer, one entry per provider, from tool calls that succeeded.
+// Source names read "Provider (detail)", for example "Nager.Date (Portugal public holidays)".
 import type { StepView } from "./state/turnReducer";
 
-export function uniqueSources(steps: StepView[]): Source[] {
-  const byName = new Map<string, Source>();
+export type SourceGroup = { provider: string; url: string | null; details: string[] };
+
+export function sourceGroups(steps: StepView[]): SourceGroup[] {
+  const byProvider = new Map<string, SourceGroup>();
   for (const step of steps) {
     if (step.status !== "ok") continue;
     for (const source of step.sources) {
-      const known = byName.get(source.name);
-      if (!known || (!known.url.startsWith("http") && source.url.startsWith("http"))) byName.set(source.name, source);
+      const [provider, rest] = source.name.split(" (");
+      const group = byProvider.get(provider) ?? { provider, url: null, details: [] };
+      if (!group.url && source.url.startsWith("http")) group.url = source.url;
+      const detail = rest?.replace(/\)$/, "");
+      if (detail && !group.details.includes(detail)) group.details.push(detail);
+      byProvider.set(provider, group);
     }
   }
-  return [...byName.values()];
+  return [...byProvider.values()];
 }
