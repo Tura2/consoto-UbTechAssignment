@@ -78,6 +78,12 @@ describe("buildCards", () => {
     expect(buildCards({ results, policy: null, showPolicy: false, trip: LISBON_TRIP }).map((card) => card.kind)).toEqual(["cost"]);
   });
 
+  it("shows detail cards when no city is chosen but the tools returned only one", async () => {
+    const results = [agentResult("budget_policy", [await run(budgetEstimateCost, { cities: ["Prague"], days: 3, team: "platform" })])];
+    const cards = buildCards({ results, policy: null, showPolicy: false, trip: BASE_TRIP });
+    expect(cards.map((card) => (card.kind === "cost" ? card.estimate.city : card.kind))).toEqual(["Prague"]);
+  });
+
   it("adds venues and the itinerary with place names", async () => {
     const results = [
       agentResult("venues", [await run(placesFindForTeam, { city: "Lisbon", team: "platform" })]),

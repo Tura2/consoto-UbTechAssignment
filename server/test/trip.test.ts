@@ -106,6 +106,10 @@ describe("namedCandidates", () => {
     expect(update.candidateCities).toEqual(["Lisbon", "Rome"]);
   });
 
+  it("ignores empty city names", () => {
+    expect(namedCandidates({ candidateCities: [" ", "Prague"] }, "what about Prague?").candidateCities).toEqual(["Prague"]);
+  });
+
   it("leaves an update without candidates alone", () => {
     expect(namedCandidates({ city: "Lisbon" }, "Lisbon sounds good")).toEqual({ city: "Lisbon", candidateCities: undefined });
   });
