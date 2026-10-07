@@ -50,6 +50,9 @@ a { color: var(--accent); }
 .bubble.answer { background: var(--panel); border: 1px solid var(--line); }
 .bubble.answer p:first-child { margin-top: 0; }
 .bubble.answer p:last-child { margin-bottom: 0; }
+.bubble.answer table, .agent-summary table { border-collapse: collapse; margin: 8px 0; font-size: 13px; display: block; overflow-x: auto; }
+.bubble.answer th, .bubble.answer td, .agent-summary th, .agent-summary td { border: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+.bubble.answer th, .agent-summary th { background: var(--bg); }
 .assistant { display: flex; flex-direction: column; gap: 10px; }
 .plan { font-size: 14px; }
 .chip { display: inline-block; padding: 2px 10px; margin: 2px 4px 2px 0; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 13px; }

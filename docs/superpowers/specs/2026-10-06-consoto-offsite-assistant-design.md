@@ -140,7 +140,7 @@ evals/runs/             eval transcripts (gitignored)
 ### Dependencies
 
 Server: `express`, `openai`, `zod`, `tsx`. Web: `react`, `react-dom`, `vite`,
-`react-markdown`. Dev: `typescript`, `vitest`, `concurrently`, `@types/*`. Any
+`react-markdown`, `remark-gfm` (free models write markdown tables even when told not to). Dev: `typescript`, `vitest`, `concurrently`, `@types/*`. Any
 addition needs a reason in the plan.
 
 ## 4. Data

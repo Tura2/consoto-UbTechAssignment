@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { LlmCaller } from "../../../shared/events";
 import { cleanAnswer } from "../../../shared/text";
 import { AGENT_NAMES, seconds, shortModel } from "../format";
@@ -8,6 +9,9 @@ import type { AgentView, StepView, TurnView } from "../state/turnReducer";
 import { CardView } from "./Cards";
 import { Elapsed } from "./Elapsed";
 import { ProgressStrip } from "./ProgressStrip";
+
+// Models write GitHub-flavored markdown (tables included) even when asked not to; render it instead of showing pipes.
+const GFM = [remarkGfm];
 
 export function TurnBlock({ turn, onRetry }: { turn: TurnView; onRetry: () => void }) {
   const [stepsOpen, setStepsOpen] = useState(true);
@@ -49,7 +53,7 @@ export function TurnBlock({ turn, onRetry }: { turn: TurnView; onRetry: () => vo
         ))}
         {turn.answer && (
           <div className="bubble answer">
-            <Markdown>{cleanAnswer(turn.answer)}</Markdown>
+            <Markdown remarkPlugins={GFM}>{cleanAnswer(turn.answer)}</Markdown>
           </div>
         )}
         <SourcesRow turn={turn} />
@@ -106,7 +110,7 @@ function Steps({ turn }: { turn: TurnView }) {
           </div>
           {agent.summary && (
             <div className="muted agent-summary">
-              <Markdown>{cleanAnswer(agent.summary)}</Markdown>
+              <Markdown remarkPlugins={GFM}>{cleanAnswer(agent.summary)}</Markdown>
             </div>
           )}
           {turn.steps.filter((step) => step.owner === agent.agent).map((step) => (
