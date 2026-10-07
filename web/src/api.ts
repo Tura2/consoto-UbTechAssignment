@@ -1,4 +1,4 @@
-import type { AgentsInfo, HealthInfo, StreamEvent } from "../../shared/events";
+import type { AgentsInfo, ConversationSummary, HealthInfo, StreamEvent } from "../../shared/events";
 import { parseSse } from "./sse";
 
 export type StoredTurn = {
@@ -39,6 +39,13 @@ export async function getConversation(id: string): Promise<{ id: string; turns: 
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`Could not load the conversation (HTTP ${response.status}).`);
   return response.json();
+}
+
+export async function listConversations(): Promise<ConversationSummary[]> {
+  const response = await fetch("/api/conversations");
+  if (!response.ok) throw new Error(`Could not load the history (HTTP ${response.status}).`);
+  const body: { conversations: ConversationSummary[] } = await response.json();
+  return body.conversations;
 }
 
 export async function getHealth(): Promise<HealthInfo> {

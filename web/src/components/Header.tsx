@@ -8,14 +8,17 @@ function healthText(health: HealthInfo): string {
   return "OpenRouter status unknown";
 }
 
-export function Header({ onHowItWorks, onNewChat }: { onHowItWorks: () => void; onNewChat: () => void }) {
+type Props = { finishedTurns: number; onHowItWorks: () => void; onHistory: () => void; onNewChat: () => void };
+
+// finishedTurns changes when a turn ends, which refreshes the free-requests count.
+export function Header({ finishedTurns, onHowItWorks, onHistory, onNewChat }: Props) {
   const [health, setHealth] = useState<HealthInfo | null>(null);
   useEffect(() => {
     const load = () => getHealth().then(setHealth).catch(() => setHealth(null));
     load();
     const timer = setInterval(load, 60_000);
     return () => clearInterval(timer);
-  }, []);
+  }, [finishedTurns]);
   return (
     <header className="header">
       <div className="brand">
@@ -27,6 +30,7 @@ export function Header({ onHowItWorks, onNewChat }: { onHowItWorks: () => void; 
       </div>
       <div className="header-actions">
         {health && <span className={`pill ${health.keyValid === false ? "bad" : ""}`}>{healthText(health)}</span>}
+        <button onClick={onHistory}>History</button>
         <button onClick={onHowItWorks}>How it works</button>
         <button onClick={onNewChat}>New chat</button>
       </div>

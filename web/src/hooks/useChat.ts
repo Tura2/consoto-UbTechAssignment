@@ -12,14 +12,15 @@ export function useChat() {
   const [turns, setTurns] = useState<TurnView[]>([]);
   const controllerRef = useRef<AbortController | null>(null);
 
+  async function loadConversation(id: string) {
+    const conversation = await getConversation(id);
+    if (!conversation) throw new Error("That conversation no longer exists.");
+    setTurns(conversation.turns.map((t) => turnFromEvents(t.id, t.userMessage, t.events, t.status)));
+  }
+
   useEffect(() => {
     const id = conversationFromUrl();
-    if (!id) return;
-    getConversation(id)
-      .then((conversation) => {
-        if (conversation) setTurns(conversation.turns.map((t) => turnFromEvents(t.id, t.userMessage, t.events, t.status)));
-      })
-      .catch(() => {});
+    if (id) loadConversation(id).catch(() => {});
   }, []);
 
   const update = (id: string, change: (turn: TurnView) => TurnView) =>
@@ -30,7 +31,7 @@ export function useChat() {
     const controller = new AbortController();
     controllerRef.current = controller;
     let turnId = `local-${Date.now()}`;
-    setTurns((all) => [...all, newTurn(turnId, message)]);
+    setTurns((all) => [...all, newTurn(turnId, message, Date.now())]);
     try {
       await streamChat({
         conversationId,
@@ -43,7 +44,7 @@ export function useChat() {
             setConversationId(event.conversationId);
             window.history.replaceState(null, "", `?c=${event.conversationId}`);
           }
-          update(id, (turn) => applyEvent(turn, event));
+          update(id, (turn) => applyEvent(turn, event, Date.now()));
         },
       });
       update(turnId, (turn) =>
@@ -68,5 +69,13 @@ export function useChat() {
     window.history.replaceState(null, "", window.location.pathname);
   }
 
-  return { turns, running: turns.some((turn) => turn.status === "running"), send, stop, newChat };
+  // Opens a saved conversation from the History panel. The next message continues it.
+  async function openConversation(id: string) {
+    stop();
+    await loadConversation(id);
+    setConversationId(id);
+    window.history.replaceState(null, "", `?c=${id}`);
+  }
+
+  return { turns, conversationId, running: turns.some((turn) => turn.status === "running"), send, stop, newChat, openConversation };
 }

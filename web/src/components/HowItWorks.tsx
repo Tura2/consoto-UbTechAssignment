@@ -1,22 +1,27 @@
 import { useEffect, useState } from "react";
 import type { AgentsInfo } from "../../../shared/events";
 import { getAgents } from "../api";
+import { useEscape } from "../hooks/useEscape";
 
 export function HowItWorks({ onClose }: { onClose: () => void }) {
   const [info, setInfo] = useState<AgentsInfo | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEscape(onClose);
   useEffect(() => {
-    getAgents().then(setInfo).catch(() => setInfo(null));
+    getAgents()
+      .then(setInfo)
+      .catch((cause: Error) => setError(cause.message));
   }, []);
   return (
     <div className="drawer-backdrop" onClick={onClose}>
-      <aside className="drawer" onClick={(event) => event.stopPropagation()}>
+      <aside className="drawer" role="dialog" aria-modal="true" aria-labelledby="how-title" onClick={(event) => event.stopPropagation()}>
         <div className="drawer-head">
-          <h2>How it works</h2>
+          <h2 id="how-title">How it works</h2>
           <button onClick={onClose}>Close</button>
         </div>
-        {!info ? (
-          <p className="muted">Loading...</p>
-        ) : (
+        {error && <p className="notice bad">{error}</p>}
+        {!error && !info && <p className="muted">Loading...</p>}
+        {info && (
           <>
             <h3>The orchestrator</h3>
             <p>{info.routing}</p>
