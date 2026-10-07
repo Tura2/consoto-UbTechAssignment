@@ -72,6 +72,14 @@ export function parsePlan(json: string): { success: true; plan: Plan } | { succe
   return result.success ? { success: true, plan: result.data } : { success: false, error: z.prettifyError(result.error) };
 }
 
+// Weather, holidays and the itinerary need the search period in code; without it an agent would guess dates.
+// Seen live: "second half of March" with no searchPeriod in the plan, so no dates for the whole conversation.
+function missingSearchPeriod(plan: Plan, trip: Trip): string | null {
+  const needsDates = plan.agents.some((entry) => entry.agent === "weather_calendar" || entry.agent === "itinerary");
+  if (!needsDates || trip.searchWindow || plan.tripUpdate.searchPeriod || plan.tripUpdate.startDay) return null;
+  return "the trip has no dates yet; set tripUpdate.searchPeriod from the user's words (month and part), and leave it out only if the user named no time at all";
+}
+
 export async function makePlan(args: {
   llm: Llm;
   history: ChatMessage[];
@@ -101,9 +109,10 @@ export async function makePlan(args: {
     const call = message.tool_calls?.find((c) => c.type === "function" && c.function.name === "submit_plan");
     if (call && call.type === "function") {
       const parsed = parsePlan(call.function.arguments);
-      if (parsed.success) return parsed.plan;
+      const problem = parsed.success ? missingSearchPeriod(parsed.plan, args.trip) : parsed.error;
+      if (parsed.success && (problem === null || attempt === 1)) return parsed.plan;
       messages.push({ role: "assistant", content: message.content ?? null, tool_calls: [call] });
-      messages.push({ role: "tool", tool_call_id: call.id, content: `Invalid plan: ${parsed.error}. Call submit_plan again with valid arguments.` });
+      messages.push({ role: "tool", tool_call_id: call.id, content: `Invalid plan: ${problem}. Call submit_plan again with valid arguments.` });
     } else {
       messages.push({ role: "assistant", content: message.content ?? "" });
       messages.push({ role: "user", content: "You must call submit_plan with the routing plan." });

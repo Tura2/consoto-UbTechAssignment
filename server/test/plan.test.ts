@@ -65,6 +65,26 @@ describe("makePlan", () => {
     expect(plan.reason).toBe(VALID.reason);
   });
 
+  it("asks once more when agents need dates but the plan leaves out the search period", async () => {
+    // A real reply: message 1 said "second half of March" but the plan carried no searchPeriod.
+    const noPeriod = { ...VALID, tripUpdate: { team: "platform", region: "Europe", days: 3 } };
+    const { llm, calls, requests } = scriptedLlm({ planner: [toolCall("submit_plan", noPeriod), toolCall("submit_plan", VALID)] });
+    const plan = await makePlan(args(llm));
+    expect(calls).toEqual(["planner", "planner"]);
+    expect(JSON.stringify(requests[1].messages.at(-1))).toContain("searchPeriod");
+    expect(plan.tripUpdate.searchPeriod).toEqual({ month: 3, part: "second_half" });
+  });
+
+  it("accepts the second plan even without a period, and does not ask when the trip has one", async () => {
+    const noPeriod = { ...VALID, tripUpdate: {} };
+    const first = scriptedLlm({ planner: [toolCall("submit_plan", noPeriod), toolCall("submit_plan", noPeriod)] });
+    expect((await makePlan(args(first.llm))).agents).toHaveLength(2);
+    const dated = scriptedLlm({ planner: [toolCall("submit_plan", noPeriod)] });
+    const trip = { ...newTrip(), searchWindow: { from: "2027-03-16", to: "2027-03-31" } };
+    await makePlan({ ...args(dated.llm), trip });
+    expect(dated.calls).toEqual(["planner"]);
+  });
+
   it("asks the user to rephrase when the model never calls submit_plan", async () => {
     const { llm } = scriptedLlm({ planner: [text("Lisbon!"), text("Really, Lisbon.")] });
     expect(await makePlan(args(llm))).toEqual(FALLBACK_PLAN);
