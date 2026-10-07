@@ -6,7 +6,7 @@ import { AGENT_IDS } from "../agents/ids";
 import { AGENT_LIST } from "../agents/registry";
 import type { ChatMessage, Llm } from "../llm/openrouter";
 import { toChatTool } from "../llm/schema";
-import { TripUpdateSchema, applyTripUpdate, namedCandidates, periodFromMessage } from "./trip";
+import { TripUpdateSchema, applyTripUpdate, namedCandidates } from "./trip";
 
 // tripUpdate and agents are required (send {} or [] when there is nothing): with defaults the model saw
 // them as optional and sometimes sent only reason and clarify, which silently ran nothing.
@@ -72,20 +72,16 @@ export function parsePlan(json: string): { success: true; plan: Plan } | { succe
   return result.success ? { success: true, plan: result.data } : { success: false, error: z.prettifyError(result.error) };
 }
 
-// Problems code can see in a valid plan; the planner is asked once more. Both were seen live:
-// 1. A question about something the trip already has ("Which European cities?" when code fills the region's cities).
-// 2. Weather, holidays or the itinerary with no search period ("second half of March" but no searchPeriod),
-//    so an agent would guess dates and the conversation would never get any.
+// A valid plan that only asks about something the trip already has (seen live on the free model: "Which European
+// cities?" when code fills the region's cities). The planner is asked once more, to route the message instead.
+// A missing search period needs no retry: code reads the month from the user's words (fillPeriod in trip.ts).
 function planProblem(plan: Plan, trip: Trip, message: string, today: string): string | null {
   const next = applyTripUpdate(trip, namedCandidates(plan.tripUpdate, message), today);
   const cities = next.city ? [next.city] : next.candidateCities;
   if (plan.agents.length === 0 && plan.clarify && cities.length > 0 && next.searchWindow) {
     return `Do not ask: the trip already has ${cities.join(", ")} and the dates ${next.searchWindow.from} to ${next.searchWindow.to}. Route the message to the agents`;
   }
-  const needsDates = plan.agents.some((entry) => entry.agent === "weather_calendar" || entry.agent === "itinerary");
-  if (!needsDates || trip.searchWindow || trip.start || plan.tripUpdate.searchPeriod || plan.tripUpdate.startDay) return null;
-  if (periodFromMessage(message)) return null; // code reads the period from the user's words (fillPeriod)
-  return "The trip has no dates yet. Set tripUpdate.searchPeriod from the user's words (month and part); leave it out only if the user named no time at all";
+  return null;
 }
 
 export async function makePlan(args: {

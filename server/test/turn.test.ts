@@ -145,8 +145,7 @@ describe("runTurn", () => {
   it("handles an itinerary request with no city or dates", async () => {
     const noDates = { tripUpdate: {}, agents: [{ agent: "itinerary", task: "Draft a plan." }], reason: "You asked for a plan." };
     const { llm } = scriptedLlm({
-      // The planner is asked once for a search period; the user named none, so the same plan comes back.
-      planner: [toolCall("submit_plan", noDates), toolCall("submit_plan", noDates)],
+      planner: [toolCall("submit_plan", noDates)],
       itinerary: [toolCall("itinerary_submit_plan", GOOD_PLAN), text("I need a city first.")],
     });
     const { events, turn } = await turnWith(llm, "Draft our offsite plan.");

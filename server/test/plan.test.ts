@@ -65,16 +65,6 @@ describe("makePlan", () => {
     expect(plan.reason).toBe(VALID.reason);
   });
 
-  it("asks once more when agents need dates but the plan leaves out the search period", async () => {
-    // A real reply: message 1 said "second half of March" but the plan carried no searchPeriod.
-    const noPeriod = { ...VALID, tripUpdate: { team: "platform", region: "Europe", days: 3 } };
-    const { llm, calls, requests } = scriptedLlm({ planner: [toolCall("submit_plan", noPeriod), toolCall("submit_plan", VALID)] });
-    const plan = await makePlan(args(llm));
-    expect(calls).toEqual(["planner", "planner"]);
-    expect(JSON.stringify(requests[1].messages.at(-1))).toContain("searchPeriod");
-    expect(plan.tripUpdate.searchPeriod).toEqual({ month: 3, part: "second_half" });
-  });
-
   it("asks once more when the plan only asks for something the trip already has", async () => {
     // A real reply on the free model: message 1 asked "Which European cities?" although code fills the region's cities.
     const asks = { tripUpdate: VALID.tripUpdate, agents: [], reason: "Need the cities.", clarify: "Which European cities would you like to consider?" };
@@ -83,13 +73,6 @@ describe("makePlan", () => {
     expect(calls).toEqual(["planner", "planner"]);
     expect(JSON.stringify(requests[1].messages.at(-1))).toContain("Do not ask");
     expect(plan.agents).toHaveLength(2);
-  });
-
-  it("does not ask for a period the user's message names (code reads it)", async () => {
-    const noPeriod = { ...VALID, tripUpdate: { team: "platform", region: "Europe" } };
-    const { llm, calls } = scriptedLlm({ planner: [toolCall("submit_plan", noPeriod)] });
-    await makePlan({ ...args(llm), message: "Somewhere in Europe, second half of March. Where should we go?" });
-    expect(calls).toEqual(["planner"]);
   });
 
   it("keeps the trip facts of the first attempt when the second sends only its corrections", async () => {
@@ -102,25 +85,17 @@ describe("makePlan", () => {
   });
 
   it("keeps the first plan when the second attempt fails", async () => {
-    const noPeriod = { ...VALID, tripUpdate: {} };
-    const { llm } = scriptedLlm({ planner: [toolCall("submit_plan", noPeriod), text("Sorry.")] });
-    expect((await makePlan(args(llm))).agents).toHaveLength(2);
+    const asks = { tripUpdate: VALID.tripUpdate, agents: [], reason: "Need the cities.", clarify: "Which cities?" };
+    const { llm, calls } = scriptedLlm({ planner: [toolCall("submit_plan", asks), text("Sorry.")] });
+    const plan = await makePlan({ ...args(llm), message: "Somewhere in Europe, second half of March. Where should we go?" });
+    expect(calls).toEqual(["planner", "planner"]);
+    expect(plan.clarify).toBe("Which cities?");
   });
 
-  it("does not ask for a period when the trip already has a start date", async () => {
+  it("accepts a plan without a search period at once (code reads the month from the message)", async () => {
     const { llm, calls } = scriptedLlm({ planner: [toolCall("submit_plan", { ...VALID, tripUpdate: {} })] });
-    await makePlan({ ...args(llm), trip: { ...newTrip(), start: { date: "2027-03-22", source: "user" } } });
+    await makePlan(args(llm));
     expect(calls).toEqual(["planner"]);
-  });
-
-  it("accepts the second plan even without a period, and does not ask when the trip has one", async () => {
-    const noPeriod = { ...VALID, tripUpdate: {} };
-    const first = scriptedLlm({ planner: [toolCall("submit_plan", noPeriod), toolCall("submit_plan", noPeriod)] });
-    expect((await makePlan(args(first.llm))).agents).toHaveLength(2);
-    const dated = scriptedLlm({ planner: [toolCall("submit_plan", noPeriod)] });
-    const trip = { ...newTrip(), searchWindow: { from: "2027-03-16", to: "2027-03-31" } };
-    await makePlan({ ...args(dated.llm), trip });
-    expect(dated.calls).toEqual(["planner"]);
   });
 
   it("asks the user to rephrase when the model never calls submit_plan", async () => {
