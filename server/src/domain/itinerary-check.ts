@@ -21,6 +21,7 @@ export function checkItinerary(
   plan.days.forEach((day, index) => {
     const expected = addDays(trip.start, index);
     if (day.date !== expected) problems.push(`Day ${index + 1} should be ${expected}, not ${day.date}.`);
+    if (!day.items.some((item) => item.kind === "meal")) problems.push(`Day ${index + 1} has no meal, so the team's food needs are not covered.`);
     for (const item of day.items) {
       const label = `Day ${index + 1} ${item.slot}`;
       const venues: Place[] = [];
@@ -34,6 +35,7 @@ export function checkItinerary(
         if (place.wheelchair === "no") inaccessible.add(place.name);
         else if (place.wheelchair !== "yes") toConfirm.add(place.name);
       }
+      if (item.kind === "activity" && item.venueIds.length === 0) toConfirm.add(item.note || label);
       if (item.kind !== "meal") continue;
       const fromVenues = new Set(venues.flatMap((venue) => venue.diets));
       const missing = needs.filter((need) => !fromVenues.has(need) && !item.catering.includes(need));

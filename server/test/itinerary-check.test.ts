@@ -38,9 +38,39 @@ describe("checkItinerary", () => {
       'Day 1 dinner: unknown venue id "node/1". Use only ids from the venues list.',
       "Day 1 dinner: no option for kosher. Add a venue tagged for it or add catering.",
       "Day 2 should be 2027-03-17, not 2027-03-18.",
+      "Day 2 has no meal, so the team's food needs are not covered.",
       "Ao 26 is tagged as not wheelchair accessible. Replace it.",
     ]);
     expect(check.uncoveredMeals).toEqual(["Day 1 dinner: no option for kosher"]);
     expect(check.inaccessible).toEqual(["Ao 26"]);
+  });
+
+  it("asks to confirm access for an activity without a venue", () => {
+    const plan: ItineraryPlan = {
+      days: GOOD_PLAN.days.map((day, index) =>
+        index === 1 ? { ...day, items: [...day.items, { slot: "afternoon", kind: "activity", venueIds: [], catering: [], note: "Walk by the river" }] } : day,
+      ),
+    };
+    const check = checkItinerary(plan, TRIP, places, NEEDS);
+    expect(check.accessToConfirm).toContain("Walk by the river");
+    expect(check.notes).toContain("Confirm step-free access at Walk by the river.");
+  });
+
+  it("names the slot when an activity without a venue has no note", () => {
+    const plan: ItineraryPlan = {
+      days: GOOD_PLAN.days.map((day, index) =>
+        index === 2 ? { ...day, items: [...day.items, { slot: "dinner", kind: "activity", venueIds: [], catering: [], note: "" }] } : day,
+      ),
+    };
+    expect(checkItinerary(plan, TRIP, places, NEEDS).accessToConfirm).toContain("Day 3 dinner");
+  });
+
+  it("rejects a day without a meal", () => {
+    const plan: ItineraryPlan = {
+      days: GOOD_PLAN.days.map((day, index) => (index === 1 ? { ...day, items: [] } : day)),
+    };
+    const check = checkItinerary(plan, TRIP, places, NEEDS);
+    expect(check.accepted).toBe(false);
+    expect(check.problems).toEqual(["Day 2 has no meal, so the team's food needs are not covered."]);
   });
 });

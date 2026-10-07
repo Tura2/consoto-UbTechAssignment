@@ -69,7 +69,7 @@ export function normalizeTeamId(input: string): string {
 
 export function getTeam(id: string): Team | null {
   const key = normalizeTeamId(id);
-  const team = teams[key];
+  const team = Object.hasOwn(teams, key) ? teams[key] : null;
   return team ? { id: key, ...team } : null;
 }
 
@@ -118,5 +118,8 @@ export function getDestination(city: string): Destination | null {
 
 export function citiesInRegion(region: string): string[] {
   const wanted = region.trim().toLowerCase();
-  return listCities().filter((city) => getDestination(city)?.region.toLowerCase() === wanted);
+  return listCities().filter((city) => {
+    const known = getDestination(city)?.region.toLowerCase();
+    return known !== undefined && wanted.includes(known);
+  });
 }

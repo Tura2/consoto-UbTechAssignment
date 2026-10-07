@@ -22,6 +22,7 @@ describe("Consoto data", () => {
 
   it("returns null for a team it has no data for", () => {
     expect(getTeam("Data team")).toBeNull();
+    expect(getTeam("constructor")).toBeNull();
     expect(listTeams()).toEqual(["platform"]);
   });
 
@@ -58,5 +59,6 @@ describe("Consoto data", () => {
     expect(getDestination("Rome")).toBeNull();
     expect(citiesInRegion("europe")).toHaveLength(5);
     expect(citiesInRegion("Asia")).toEqual([]);
+    expect(citiesInRegion("Southern Europe")).toHaveLength(5);
   });
 });
