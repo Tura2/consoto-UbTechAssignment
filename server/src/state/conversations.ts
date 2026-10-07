@@ -42,13 +42,13 @@ export function createStore(makeTrip: () => Trip): Store {
   };
 }
 
-// What the planner and the answer see of earlier turns: the user's words and our final answers.
+// What the planner and the answer see of earlier turns: the user's words and our final answers,
+// or a placeholder when a turn ended without one (so an interrupted request is not lost).
 export function historyMessages(conversation: Conversation, limit = 10): ChatMessage[] {
   return conversation.turns
-    .filter((turn) => turn.status !== "running" && turn.answer)
     .flatMap((turn): ChatMessage[] => [
       { role: "user", content: turn.userMessage },
-      { role: "assistant", content: turn.answer },
+      { role: "assistant", content: turn.answer || "(No answer: this turn was stopped or failed.)" },
     ])
     .slice(-limit);
 }

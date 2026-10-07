@@ -23,7 +23,11 @@ const app = createApp({
   webDist: path.join(ROOT_DIR, "web", "dist"),
 });
 
-app.listen(config.port, () => {
+app.listen(config.port, (error?: Error) => {
+  if (error) {
+    console.error(`\n  Could not start on port ${config.port}: ${error.message}. Set PORT in .env to a free port.\n`);
+    process.exit(1);
+  }
   console.log(`\n  Consoto Offsite Assistant is running at http://localhost:${config.port}\n`);
   void health().then((info) => describeHealth(info).forEach((line) => console.log(`  ${line}`)));
 });

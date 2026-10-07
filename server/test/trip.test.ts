@@ -80,14 +80,16 @@ describe("conversation store", () => {
     expect(store.get("missing")).toBeNull();
   });
 
-  it("builds chat history from finished turns only", () => {
+  it("builds chat history from every earlier turn, with a placeholder when a turn has no answer", () => {
     const store = createStore(newTrip);
     const conversation = store.getOrCreate();
     conversation.turns.push({ id: "1", userMessage: "Hi", events: [], answer: "Hello!", status: "done" });
-    conversation.turns.push({ id: "2", userMessage: "Still going", events: [], answer: "", status: "running" });
+    conversation.turns.push({ id: "2", userMessage: "Stopped", events: [], answer: "", status: "running" });
     expect(historyMessages(conversation)).toEqual([
       { role: "user", content: "Hi" },
       { role: "assistant", content: "Hello!" },
+      { role: "user", content: "Stopped" },
+      { role: "assistant", content: "(No answer: this turn was stopped or failed.)" },
     ]);
   });
 });

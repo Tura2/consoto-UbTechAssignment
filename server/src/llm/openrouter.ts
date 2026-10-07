@@ -89,7 +89,8 @@ type Failure = "rate_limited" | "next_model" | "fatal" | "abort";
 export function classifyFailure(error: unknown, signal: AbortSignal): Failure {
   if (signal.aborted) return "abort";
   const status = (error as { status?: number }).status;
-  if (status === 429) return "rate_limited";
+  // The free daily cap is a 429 too, but waiting a minute will not help.
+  if (status === 429) return /free-models-per-day/i.test((error as Error).message) ? "fatal" : "rate_limited";
   if (status === 401 || status === 402 || status === 403) return "fatal";
   // Network errors, timeouts, 5xx, empty replies, and a 400 or 404 that this one model cannot serve.
   return "next_model";
@@ -98,6 +99,9 @@ export function classifyFailure(error: unknown, signal: AbortSignal): Failure {
 function fatalMessage(error: unknown): string {
   const status = (error as { status?: number }).status;
   if (status === 401) return "OpenRouter rejected the API key. Check OPENROUTER_API_KEY in .env.";
+  if (status === 429) {
+    return "OpenRouter's free daily limit for this key is used up (50 requests per day without credits, 1000 with). It resets at midnight UTC.";
+  }
   if (status === 402) return "The OpenRouter account has no credits or a negative balance.";
   return `OpenRouter refused the request (HTTP ${status}): ${(error as Error).message}`;
 }
@@ -175,6 +179,10 @@ export function createLlm(options: {
         const message = choice?.message;
         if (!message || (!message.content && !message.tool_calls?.length)) {
           throw new EmptyReplyError(`Empty reply (finish_reason: ${choice?.finish_reason ?? "none"})`);
+        }
+        // Cut off at the token limit: a half-written tool call or answer is no use, so try the next model.
+        if (choice.finish_reason === "length") {
+          throw new EmptyReplyError("Reply cut off at the token limit (finish_reason: length)");
         }
         const tokens = response.usage ? { prompt: response.usage.prompt_tokens, completion: response.usage.completion_tokens } : null;
         return { value: { message, model: response.model || model }, tokens };

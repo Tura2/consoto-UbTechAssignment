@@ -70,6 +70,22 @@ describe("createLlm.complete", () => {
     expect(statuses(events)).toEqual(["empty", "ok"]);
   });
 
+  it("falls back when a reply with a tool call was cut off at the token limit", async () => {
+    const cutOff = { tool_calls: [{ id: "c1", type: "function", function: { name: "submit_plan", arguments: '{"agents": [' } }] };
+    const { llm, events, emit } = setup([() => completion(cutOff, "m1", "length"), () => completion({ content: "ok" }, "m2")]);
+    const result = await llm.complete(request, emit);
+    expect(result.model).toBe("m2");
+    expect(statuses(events)).toEqual(["empty", "ok"]);
+    expect(events[0]).toMatchObject({ type: "llm_call", detail: expect.stringContaining("finish_reason: length") });
+  });
+
+  it("stops at once when the free daily limit is used up", async () => {
+    const daily = Object.assign(apiError(429), { message: "429 Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day" });
+    const { llm, create, emit } = setup([() => { throw daily; }]);
+    await expect(llm.complete(request, emit)).rejects.toThrow(/free daily limit for this key is used up/);
+    expect(create).toHaveBeenCalledTimes(1);
+  });
+
   it("waits and tries the list once more, then gives up", async () => {
     const { llm, create, events, emit } = setup([
       () => { throw apiError(503); },
@@ -138,6 +154,8 @@ describe("helpers", () => {
   it("classifies failures", () => {
     const live = new AbortController().signal;
     expect(classifyFailure(apiError(429), live)).toBe("rate_limited");
+    expect(classifyFailure(Object.assign(apiError(429), { message: "429 Rate limit exceeded: free-models-per-min." }), live)).toBe("rate_limited");
+    expect(classifyFailure(Object.assign(apiError(429), { message: "429 Rate limit exceeded: free-models-per-day." }), live)).toBe("fatal");
     expect(classifyFailure(apiError(402), live)).toBe("fatal");
     expect(classifyFailure(apiError(500), live)).toBe("next_model");
     expect(classifyFailure(new Error("socket hang up"), live)).toBe("next_model");
