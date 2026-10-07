@@ -49,7 +49,7 @@ flowchart TD
 
 1. **Plan (LLM).** The planner reads the message, the trip so far and the agent catalog, and must call `submit_plan` with: what changed in the trip, which agents to run with what task, and one sentence of reasoning. The chat shows that sentence. It returns meanings ("second half of March"), never computed dates.
 2. **Trip facts (code).** Code turns the plan into facts: 2027-03-16 to 2027-03-31, 3 days and 2 nights, Lisbon. Results that depended on a changed fact are dropped.
-3. **Agents (LLM + code tools).** Independent agents run in parallel. The itinerary writer runs after the venue search it depends on. Each agent is a small tool loop (at most 3 rounds) over its own 1 to 3 tools.
+3. **Agents (LLM + code tools).** Independent agents run in parallel. The itinerary writer runs after the venue search it depends on. Each agent is a small tool loop (at most 3 rounds) over its own 1 or 2 tools.
 4. **Policy (code).** The orchestrator runs `policy_check` itself after every turn that has a city, so the model can never skip the policy.
 5. **Cards (code).** Tables and totals are built from tool data, so every number on screen comes from code.
 6. **Answer (LLM, streamed).** The final call writes a short reply from the agents' data and may only quote numbers that are in it.
@@ -65,7 +65,7 @@ flowchart TD
 
 ### Why more than one agent
 
-- **Focus.** Each agent sees 1 to 3 tools and a short prompt about one domain. Free models pick tools much more reliably from a small set than from seven at once.
+- **Focus.** Each agent sees 1 or 2 tools and a short prompt about one domain. Free models pick tools much more reliably from a small set than from seven at once.
 - **Speed.** Cost and weather for five cities run at the same time.
 - **Isolation.** If OpenStreetMap is down, the venues agent says so, and the cost and policy answers still arrive.
 - **Ownership.** Each agent maps to one data owner, so each can be tested and changed on its own.
