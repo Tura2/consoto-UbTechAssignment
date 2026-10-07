@@ -1,5 +1,5 @@
 // Applies stream events to one turn's view. Pure, so it is easy to test and the UI never blocks on it.
-import type { AgentId, Source } from "../../../shared/domain";
+import type { AgentId, Source, Trip } from "../../../shared/domain";
 import type { Card, LlmCaller, StepOwner, StreamEvent } from "../../../shared/events";
 
 export type TurnStatus = "running" | "done" | "stopped" | "error";
@@ -18,7 +18,15 @@ export type StepView = {
   ms: number | null;
 };
 
-export type AgentView = { agent: AgentId; task: string; status: "running" | "ok" | "error" | "timeout"; summary: string };
+// startedAt is the browser clock when the agent started. It is null for a reloaded turn, which has no live timing.
+export type AgentView = {
+  agent: AgentId;
+  task: string;
+  status: "running" | "ok" | "error" | "timeout";
+  summary: string;
+  startedAt: number | null;
+  ms: number | null;
+};
 export type LlmView = { who: LlmCaller; model: string; attempt: number; status: "ok" | "rate_limited" | "error" | "empty"; ms: number; detail: string | null };
 export type WaitView = { who: LlmCaller; waitMs: number; reason: "local_limit" | "retry_after" };
 
@@ -26,7 +34,8 @@ export type TurnView = {
   id: string;
   userMessage: string;
   status: TurnStatus;
-  plan: { agents: { agent: AgentId; task: string }[]; reason: string; clarify: string | null } | null;
+  startedAt: number | null;
+  plan: { agents: { agent: AgentId; task: string }[]; reason: string; clarify: string | null; trip: Trip; ms: number } | null;
   agents: AgentView[];
   steps: StepView[];
   llm: LlmView[];
@@ -38,22 +47,23 @@ export type TurnView = {
   error: string | null;
 };
 
-export function newTurn(id: string, userMessage: string): TurnView {
-  return { id, userMessage, status: "running", plan: null, agents: [], steps: [], llm: [], waits: [], cards: [], answer: "", llmCalls: 0, ms: null, error: null };
+export function newTurn(id: string, userMessage: string, startedAt: number | null): TurnView {
+  return { id, userMessage, status: "running", startedAt, plan: null, agents: [], steps: [], llm: [], waits: [], cards: [], answer: "", llmCalls: 0, ms: null, error: null };
 }
 
-export function applyEvent(turn: TurnView, event: StreamEvent): TurnView {
+// now is the browser clock for live timers; null when replaying stored events.
+export function applyEvent(turn: TurnView, event: StreamEvent, now: number | null): TurnView {
   switch (event.type) {
     case "turn_start":
       return { ...turn, id: event.turnId };
     case "plan":
-      return { ...turn, plan: { agents: event.agents, reason: event.reason, clarify: event.clarify } };
+      return { ...turn, plan: { agents: event.agents, reason: event.reason, clarify: event.clarify, trip: event.trip, ms: event.ms } };
     case "agent_start":
-      return { ...turn, agents: [...turn.agents, { agent: event.agent, task: event.task, status: "running", summary: "" }] };
+      return { ...turn, agents: [...turn.agents, { agent: event.agent, task: event.task, status: "running", summary: "", startedAt: now, ms: null }] };
     case "agent_end":
       return {
         ...turn,
-        agents: turn.agents.map((agent) => (agent.agent === event.agent ? { ...agent, status: event.status, summary: event.summary } : agent)),
+        agents: turn.agents.map((agent) => (agent.agent === event.agent ? { ...agent, status: event.status, summary: event.summary, ms: event.ms } : agent)),
       };
     case "tool_start":
       return {
@@ -99,6 +109,6 @@ export function applyEvent(turn: TurnView, event: StreamEvent): TurnView {
 
 // Rebuilds a stored turn after a page reload.
 export function turnFromEvents(id: string, userMessage: string, events: StreamEvent[], status: TurnStatus): TurnView {
-  const turn = events.reduce(applyEvent, newTurn(id, userMessage));
+  const turn = events.reduce((view, event) => applyEvent(view, event, null), newTurn(id, userMessage, null));
   return turn.status === "running" && status !== "running" ? { ...turn, status } : turn;
 }

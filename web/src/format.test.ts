@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ils, pct, range, seconds, shortDate, shortModel } from "./format";
+import { dateTime, ils, pct, range, seconds, shortDate, shortModel } from "./format";
 
 describe("format", () => {
   it("formats dates, money, shares, models and durations", () => {
@@ -11,5 +11,6 @@ describe("format", () => {
     expect(pct(0.28)).toBe("28%");
     expect(shortModel("google/gemma-4-31b-it:free")).toBe("gemma-4-31b-it");
     expect(seconds(14234)).toBe("14.2 s");
+    expect(dateTime("2027-03-16T12:00:00Z")).toContain("Mar");
   });
 });
