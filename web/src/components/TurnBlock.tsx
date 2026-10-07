@@ -83,8 +83,12 @@ function Steps({ turn }: { turn: TurnView }) {
           <div className="group-head">
             <StatusIcon status={agent.status} />
             <strong>{AGENT_NAMES[agent.agent]}</strong>
-            <span className="muted">{agent.summary}</span>
           </div>
+          {agent.summary && (
+            <div className="muted agent-summary">
+              <Markdown>{cleanAnswer(agent.summary)}</Markdown>
+            </div>
+          )}
           {turn.steps.filter((step) => step.owner === agent.agent).map((step) => (
             <StepRow key={step.callId} step={step} />
           ))}

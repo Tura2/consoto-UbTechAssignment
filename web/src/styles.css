@@ -61,6 +61,8 @@ a { color: var(--accent); }
 .steps { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
 .group { border-left: 3px solid var(--accent-soft); padding-left: 10px; }
 .group-head { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; font-size: 14px; }
+.agent-summary { font-size: 13px; }
+.agent-summary p { margin: 4px 0; }
 .step-line { display: flex; gap: 8px; align-items: baseline; width: 100%; text-align: left; border: none; background: none; padding: 4px 0; font-size: 13px; }
 .step-summary { flex: 1; }
 .step-details { padding: 6px 0 10px 24px; font-size: 13px; }
