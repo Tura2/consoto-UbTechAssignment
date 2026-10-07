@@ -99,6 +99,15 @@ describe("runTurn", () => {
     expect(calls).toEqual(["planner"]);
   });
 
+  it("tells the comparison agents the trip's cities, whatever cities the planner wrote in the task", async () => {
+    // Seen live: on message 1 the planner wrote tasks for "Lisbon, Prague, Barcelona, and Amsterdam".
+    const guessed = { ...M1_PLAN, agents: [{ agent: "budget_policy", task: "Compare Lisbon, Prague, Barcelona and Amsterdam." }] };
+    const { llm, requests } = scriptedLlm({ planner: [toolCall("submit_plan", guessed)], budget_policy: [text("Compared.")] });
+    await turnWith(llm, "Where should we go?");
+    const task = requests.find((request) => request.who === "budget_policy")!.messages.at(-1)!.content;
+    expect(task).toContain("Use exactly these cities from the trip: Lisbon, Barcelona, Athens, Prague, Budapest.");
+  });
+
   it("runs the agents when the plan names agents and also asks a question", async () => {
     // A real reply: message 1 routed to both comparison agents and also asked "Which cities?".
     const { llm } = scriptedLlm({

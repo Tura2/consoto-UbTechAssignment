@@ -1,6 +1,6 @@
 // One chat turn: plan (LLM), trip facts (code), agents (LLM + code tools), policy (code), cards (code), answer (LLM).
 import { randomUUID } from "node:crypto";
-import type { AgentId, PolicyVerdict, VenuesResult } from "../../../shared/domain";
+import type { AgentId, PolicyVerdict, Trip, VenuesResult } from "../../../shared/domain";
 import type { Emit } from "../../../shared/events";
 import { cleanAnswer } from "../../../shared/text";
 import { AGENTS } from "../agents/registry";
@@ -19,7 +19,7 @@ import { buildAnswerContext, streamAnswer } from "./answer";
 import { buildCards } from "./cards";
 import { makePlan, type Plan } from "./plan";
 import { lastToolData } from "./tool-data";
-import { applyTripUpdate, depsKey, dropStaleFindings, namedCandidates } from "./trip";
+import { applyTripUpdate, depsKey, dropStaleFindings, focusCities, namedCandidates } from "./trip";
 
 export type TurnDeps = { llm: Llm; data: DataSources; today: () => string; agentPhaseMs?: number };
 
@@ -111,7 +111,7 @@ async function runAgents(
   const runOne = async (agent: AgentId): Promise<AgentResult> => {
     const result = await runAgent({
       def: AGENTS[agent],
-      task: tasks.get(agent) ?? "",
+      task: withTripCities(agent, tasks.get(agent) ?? "", conversation.trip),
       extraContext: agent === "itinerary" ? itineraryContext(conversation) : undefined,
       ctx: toolContext(conversation, deps, phaseSignal, today),
       llm: deps.llm,
@@ -145,6 +145,14 @@ async function assumeStartDate(conversation: Conversation, deps: TurnDeps, emit:
 async function runPolicyCheck(conversation: Conversation, deps: TurnDeps, emit: Emit, signal: AbortSignal, today: string): Promise<PolicyVerdict | null> {
   const result = await runToolWithEvents({ tool: policyCheck, input: {}, ctx: toolContext(conversation, deps, signal, today), owner: "orchestrator", emit });
   return result.ok ? (result.data as PolicyVerdict) : null;
+}
+
+// The planner writes tasks before code turns the region into cities (message 1 has none yet), so it can name
+// the wrong ones (seen live: "Lisbon, Prague, Barcelona, and Amsterdam"). Code adds the trip's cities.
+function withTripCities(agent: AgentId, task: string, trip: Trip): string {
+  const cities = focusCities(trip);
+  if ((agent !== "budget_policy" && agent !== "weather_calendar") || cities.length === 0) return task;
+  return `${task}\nUse exactly these cities from the trip: ${cities.join(", ")}.`;
 }
 
 function itineraryContext(conversation: Conversation): string {
