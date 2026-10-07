@@ -28,7 +28,7 @@ describe("calendar_find_clean_windows", () => {
 
   it("summarizes several cities at once", async () => {
     const result = await runTool(calendarFindCleanWindows, { cities: ["Lisbon", "Prague"], ...MARCH, days: 3 }, makeCtx());
-    expect(result).toMatchObject({ ok: true, summary: "Clean 3-day windows: Lisbon 5 of 14, Prague 9 of 14." });
+    expect(result).toMatchObject({ ok: true, summary: "Clean 3-day windows: Lisbon 5 of 14, Prague 4 of 14." });
   });
 
   it("reports a city without country data as a gap", async () => {

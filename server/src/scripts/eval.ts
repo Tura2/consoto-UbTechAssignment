@@ -1,5 +1,5 @@
 // Scenario evals against the real model and APIs, graded by code.
-// Usage: npm run eval [-- --scenario demo] [--trials 3]. Each full run uses roughly 30-40 LLM requests.
+// Usage: npm run eval [-- --scenario demo] [--trials 3]. Each full run uses about 50 to 55 LLM requests.
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";

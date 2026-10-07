@@ -14,9 +14,8 @@ export const PORTUGAL_2027: HolidayItem[] = [
 ];
 
 export const CZECHIA_2027: HolidayItem[] = [
-  { date: "2027-03-22", name: "Czech Holiday 1", side: "destination", country: "Czechia", source: "Nager.Date" },
-  { date: "2027-03-23", name: "Czech Holiday 2", side: "destination", country: "Czechia", source: "Nager.Date" },
-  { date: "2027-03-24", name: "Czech Holiday 3", side: "destination", country: "Czechia", source: "Nager.Date" },
+  { date: "2027-03-26", name: "Good Friday", side: "destination", country: "Czechia", source: "Nager.Date" },
+  { date: "2027-03-29", name: "Easter Monday", side: "destination", country: "Czechia", source: "Nager.Date" },
 ];
 
 const POINTS: Record<string, { lat: number; lon: number }> = {

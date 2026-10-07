@@ -53,6 +53,8 @@ describe("graders", () => {
     expect(SAYS_NO_DATA.test("There is no cost information for Rome; data only covers Lisbon.")).toBe(true);
     expect(SAYS_NO_DATA.test("I found no team data for the Data team.")).toBe(true);
     expect(SAYS_NO_DATA.test("Consoto's HR data does not contain a team identified as data; only team available is platform.")).toBe(true);
+    expect(SAYS_NO_DATA.test('there\'s no "data" team in HR records (only "platform")')).toBe(true);
+    expect(SAYS_NO_DATA.test("Consoto internal data has no HR/cost record for the **Data** team (only **platform** is known)")).toBe(true);
     expect(SAYS_NO_DATA.test("Rome would cost 3,000 ILS.")).toBe(false);
   });
 });
