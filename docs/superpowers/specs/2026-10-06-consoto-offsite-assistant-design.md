@@ -124,7 +124,7 @@ server/test/            unit tests (vitest) and fixtures recorded from live API 
 web/src/                main.tsx, App.tsx, api.ts, sse.ts, styles.css; pure helpers with tests: format.ts, progress.ts, sources.ts, trip.ts, calendar.ts, scroll.ts
   components/           Header, TripBar, EmptyState, TurnBlock, ProgressStrip, Cards, Composer, Drawer, HistoryPanel, HowItWorks, Elapsed, icons (agent colours and status icons)
   hooks/, state/        useChat.ts, useNow.ts, useEscape.ts; turnReducer.ts (stream events to the turn view)
-docs/                   research, API guide, specs, plans
+docs/                   research, API guide, the design spec
 .cache/                 disk cache for API responses and saved conversations (gitignored, except the demo conversation conversations/demo-lisbon.json)
 evals/runs/             eval transcripts (gitignored)
 ```
