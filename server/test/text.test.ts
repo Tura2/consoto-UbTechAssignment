@@ -11,7 +11,7 @@ describe("cleanAnswer", () => {
   });
 
   it("replaces em and en dashes with a plain hyphen", () => {
-    expect(cleanAnswer("Mar 26–28 — all clean")).toBe("Mar 26-28 - all clean");
+    expect(cleanAnswer("Mar 26\u201328 \u2014 all clean")).toBe("Mar 26-28 - all clean");
   });
 
   it("leaves plain text alone", () => {
