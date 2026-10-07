@@ -75,6 +75,18 @@ describe("makePlan", () => {
     expect(plan.tripUpdate.searchPeriod).toEqual({ month: 3, part: "second_half" });
   });
 
+  it("keeps the first plan when the second attempt fails", async () => {
+    const noPeriod = { ...VALID, tripUpdate: {} };
+    const { llm } = scriptedLlm({ planner: [toolCall("submit_plan", noPeriod), text("Sorry.")] });
+    expect((await makePlan(args(llm))).agents).toHaveLength(2);
+  });
+
+  it("does not ask for a period when the trip already has a start date", async () => {
+    const { llm, calls } = scriptedLlm({ planner: [toolCall("submit_plan", { ...VALID, tripUpdate: {} })] });
+    await makePlan({ ...args(llm), trip: { ...newTrip(), start: { date: "2027-03-22", source: "user" } } });
+    expect(calls).toEqual(["planner"]);
+  });
+
   it("accepts the second plan even without a period, and does not ask when the trip has one", async () => {
     const noPeriod = { ...VALID, tripUpdate: {} };
     const first = scriptedLlm({ planner: [toolCall("submit_plan", noPeriod), toolCall("submit_plan", noPeriod)] });

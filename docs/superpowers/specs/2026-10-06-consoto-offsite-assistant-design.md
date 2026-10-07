@@ -219,8 +219,9 @@ type Conversation = {
    it gets the zod error back once; if that also fails, the assistant asks the
    user to rephrase. It is also asked once more when the plan runs
    `weather_calendar` or `itinerary` but neither the trip nor the plan has a
-   search period (seen live: "second half of March" with no `searchPeriod`); the
-   second plan is accepted as it is.
+   search period or start date (seen live: "second half of March" with no
+   `searchPeriod`); the second plan is accepted as it is, and if that attempt
+   fails the first plan still runs.
 2. **Update the trip (code).** Resolve `searchPeriod` to ISO dates (16th to the
    last day for `second_half`) and its year; resolve `startDay` to an ISO date
    inside the search window (or the next occurrence of that date if there is no

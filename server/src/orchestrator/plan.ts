@@ -76,8 +76,8 @@ export function parsePlan(json: string): { success: true; plan: Plan } | { succe
 // Seen live: "second half of March" with no searchPeriod in the plan, so no dates for the whole conversation.
 function missingSearchPeriod(plan: Plan, trip: Trip): string | null {
   const needsDates = plan.agents.some((entry) => entry.agent === "weather_calendar" || entry.agent === "itinerary");
-  if (!needsDates || trip.searchWindow || plan.tripUpdate.searchPeriod || plan.tripUpdate.startDay) return null;
-  return "the trip has no dates yet; set tripUpdate.searchPeriod from the user's words (month and part), and leave it out only if the user named no time at all";
+  if (!needsDates || trip.searchWindow || trip.start || plan.tripUpdate.searchPeriod || plan.tripUpdate.startDay) return null;
+  return "The trip has no dates yet. Set tripUpdate.searchPeriod from the user's words (month and part); leave it out only if the user named no time at all";
 }
 
 export async function makePlan(args: {
@@ -94,6 +94,7 @@ export async function makePlan(args: {
     ...args.history,
     { role: "user", content: args.message },
   ];
+  let usable: Plan | null = null; // a valid plan without a period, kept in case the second attempt fails
   for (let attempt = 0; attempt < 2; attempt++) {
     const { message } = await args.llm.complete(
       {
@@ -109,14 +110,16 @@ export async function makePlan(args: {
     const call = message.tool_calls?.find((c) => c.type === "function" && c.function.name === "submit_plan");
     if (call && call.type === "function") {
       const parsed = parsePlan(call.function.arguments);
-      const problem = parsed.success ? missingSearchPeriod(parsed.plan, args.trip) : parsed.error;
-      if (parsed.success && (problem === null || attempt === 1)) return parsed.plan;
+      const missing = parsed.success ? missingSearchPeriod(parsed.plan, args.trip) : null;
+      if (parsed.success && (missing === null || attempt === 1)) return parsed.plan;
+      if (parsed.success) usable = parsed.plan;
+      const feedback = parsed.success ? `${missing}. Call submit_plan again.` : `Invalid plan: ${parsed.error}. Call submit_plan again with valid arguments.`;
       messages.push({ role: "assistant", content: message.content ?? null, tool_calls: [call] });
-      messages.push({ role: "tool", tool_call_id: call.id, content: `Invalid plan: ${problem}. Call submit_plan again with valid arguments.` });
+      messages.push({ role: "tool", tool_call_id: call.id, content: feedback });
     } else {
       messages.push({ role: "assistant", content: message.content ?? "" });
       messages.push({ role: "user", content: "You must call submit_plan with the routing plan." });
     }
   }
-  return FALLBACK_PLAN;
+  return usable ?? FALLBACK_PLAN;
 }
