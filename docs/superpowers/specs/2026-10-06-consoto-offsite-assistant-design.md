@@ -230,7 +230,7 @@ type Conversation = {
    message (the planner may invent others); if none remain, `candidateCities`
    is every city with cost data in the region; a region with no such cities becomes a tool gap. Values that
    break policy are kept as given; the policy check flags them. Findings whose `depsKey` no longer matches the trip are dropped.
-   Emit `plan`. If `clarify` is set, stream it as the answer and end the turn.
+   Emit `plan`. If `clarify` is set and the plan names no agents, stream it as the answer and end the turn (a plan that names agents runs them; seen live: agents plus "Which cities?").
 3. **Run agents (code).** Independent agents run in parallel. The itinerary
    writer runs last and needs the venues finding for the current city and a
    start date; code runs the venues agent first if that finding is missing, and

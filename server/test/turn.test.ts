@@ -99,6 +99,19 @@ describe("runTurn", () => {
     expect(calls).toEqual(["planner"]);
   });
 
+  it("runs the agents when the plan names agents and also asks a question", async () => {
+    // A real reply: message 1 routed to both comparison agents and also asked "Which cities?".
+    const { llm } = scriptedLlm({
+      planner: [toolCall("submit_plan", { ...M1_PLAN, clarify: "Which European cities would you like us to compare?" })],
+      budget_policy: [text("Costs compared.")],
+      weather_calendar: [text("Weather compared.")],
+    });
+    const { events, turn } = await turnWith(llm, "Where should we go?");
+    expect(events.filter((e) => e.type === "agent_start").map((e) => (e.type === "agent_start" ? e.agent : ""))).toEqual(["budget_policy", "weather_calendar"]);
+    expect(events).toContainEqual(expect.objectContaining({ type: "plan", clarify: null }));
+    expect(turn.answer).not.toContain("Which European cities");
+  });
+
   it("reports an Overpass outage instead of inventing venues", async () => {
     const { llm, requests } = scriptedLlm({
       planner: [toolCall("submit_plan", { tripUpdate: {}, agents: [{ agent: "venues", task: "Food in Lisbon." }], reason: "Food question." })],

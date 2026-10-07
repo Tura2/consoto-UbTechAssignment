@@ -63,10 +63,12 @@ export async function runTurn(conversation: Conversation, message: string, deps:
     signal.throwIfAborted(); // never change the trip for a turn the user already left
     conversation.trip = applyTripUpdate(conversation.trip, namedCandidates(plan.tripUpdate, message), today);
     dropStaleFindings(conversation);
-    emit({ type: "plan", agents: plan.agents, reason: plan.reason, trip: conversation.trip, clarify: plan.clarify ?? null });
+    // A plan that names agents can proceed: ask the question only when there is nothing to run.
+    const clarify = plan.agents.length === 0 && plan.clarify ? plan.clarify : null;
+    emit({ type: "plan", agents: plan.agents, reason: plan.reason, trip: conversation.trip, clarify });
 
-    if (plan.clarify) {
-      emit({ type: "answer_delta", text: plan.clarify });
+    if (clarify) {
+      emit({ type: "answer_delta", text: clarify });
     } else {
       const results = await runAgents(conversation, plan, deps, emit, signal, today);
       signal.throwIfAborted();
