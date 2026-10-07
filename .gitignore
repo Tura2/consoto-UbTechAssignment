@@ -17,8 +17,11 @@ venv/
 .mypy_cache/
 coverage/
 
-# Runtime caches and logs
-.cache/
+# Runtime caches and logs. One finished demo conversation is committed so it shows under History after a clone.
+.cache/*
+!.cache/conversations/
+.cache/conversations/*
+!.cache/conversations/demo-lisbon.json
 evals/runs/
 *.log
 

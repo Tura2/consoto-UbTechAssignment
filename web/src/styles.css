@@ -43,8 +43,6 @@ a { color: var(--accent); }
 
 .chat { position: relative; flex: 1; overflow-y: auto; padding: 16px var(--gutter); display: flex; flex-direction: column; gap: 22px; }
 .empty { margin: auto; max-width: 640px; text-align: center; }
-.suggestions { display: grid; gap: 10px; margin-top: 18px; text-align: left; }
-.suggestions button { display: grid; gap: 4px; padding: 12px 14px; }
 
 .turn { display: flex; flex-direction: column; gap: 10px; }
 .bubble { padding: 12px 14px; border-radius: var(--radius); line-height: 1.5; }
@@ -113,7 +111,6 @@ tr.total td { font-weight: 600; }
 .composer { border-top: 1px solid var(--line); background: var(--panel); padding: 10px var(--gutter) 14px; display: flex; flex-direction: column; gap: 8px; }
 .composer-row { display: flex; gap: 8px; align-items: stretch; }
 .composer textarea { flex: 1; resize: none; font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; }
-.suggestion { text-align: left; font-size: 13px; background: var(--accent-soft); border-color: transparent; color: var(--accent); }
 
 .drawer-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.35); display: flex; justify-content: flex-end; }
 .drawer { width: min(520px, 100%); height: 100%; overflow-y: auto; background: var(--panel); padding: 18px 20px; }

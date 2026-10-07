@@ -16,7 +16,7 @@ npm install
 npm start                     # builds the UI and serves everything on http://localhost:3000
 ```
 
-Open http://localhost:3000 and click the first demo message.
+Open http://localhost:3000 and type the first demo message from the brief. A finished run of all three demo messages (on the free models) is under **History** as well: open it to see every step without waiting.
 
 - Free OpenRouter models allow 20 requests per minute. An account that never bought credits gets 50 free requests per day; one that bought $10 or more gets 1,000. One chat message uses about 5 to 8 requests. The header shows how many are left today.
 - `npm run warm-cache` fetches the demo's public data ahead of time. The OpenStreetMap servers are often busy, and cached data keeps the demo smooth. No key needed.
@@ -112,7 +112,7 @@ Every tool is one file in `server/src/tools/` with a zod input schema, a descrip
 | `GET /api/health` | Key status, free requests left today, configured models (uses no LLM requests) |
 | `GET /api/agents` | The agent catalog shown in "How it works" |
 
-Conversation state lives in server memory: the messages, the trip facts, and the latest result from each agent. One turn runs per conversation at a time. After every turn the conversation is also saved under `.cache/conversations` and listed under History in the UI. To prepare the demo, run it once and it appears under History. Delete the folder to start clean.
+Conversation state lives in server memory: the messages, the trip facts, and the latest result from each agent. One turn runs per conversation at a time. After every turn the conversation is also saved under `.cache/conversations` and listed under History in the UI. One finished demo conversation, `demo-lisbon.json`, is committed so it shows under History after a clone; every other saved conversation stays local (gitignored) and can be deleted to start clean.
 
 ## Assumptions
 

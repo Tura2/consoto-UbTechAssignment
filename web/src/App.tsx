@@ -6,7 +6,6 @@ import { HistoryPanel } from "./components/HistoryPanel";
 import { HowItWorks } from "./components/HowItWorks";
 import { TripBar } from "./components/TripBar";
 import { TurnBlock } from "./components/TurnBlock";
-import { nextDemoMessage } from "./demo";
 import { useChat } from "./hooks/useChat";
 import { keepFollowing } from "./scroll";
 import { latestTrip } from "./trip";
@@ -32,7 +31,6 @@ export function App() {
     chat.send(message);
   };
   const count = chat.turns.length;
-  const suggestion = nextDemoMessage(chat.turns);
   const finishedTurns = chat.turns.filter((turn) => turn.status !== "running").length;
 
   return (
@@ -41,13 +39,13 @@ export function App() {
       <TripBar trip={latestTrip(chat.turns)} />
       <main className="chat" onScroll={onScroll}>
         {count === 0 ? (
-          <EmptyState onPick={send} />
+          <EmptyState />
         ) : (
           chat.turns.map((turn) => <TurnBlock key={turn.id} turn={turn} onRetry={() => send(turn.userMessage)} />)
         )}
         <div ref={endRef} />
       </main>
-      <Composer running={chat.running} suggestion={suggestion} onSend={send} onStop={chat.stop} />
+      <Composer running={chat.running} onSend={send} onStop={chat.stop} />
       {showHow && <HowItWorks onClose={() => setShowHow(false)} />}
       {showHistory && <HistoryPanel currentId={chat.conversationId} onOpen={chat.openConversation} onClose={() => setShowHistory(false)} />}
     </div>

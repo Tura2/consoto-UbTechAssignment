@@ -34,7 +34,7 @@ export function HistoryPanel({ currentId, onOpen, onClose }: Props) {
         </div>
         {error && <p className="notice bad">{error}</p>}
         {!error && !items && <p className="muted">Loading...</p>}
-        {items && items.length === 0 && <p className="muted">No saved conversations yet. Run the demo once and it appears here.</p>}
+        {items && items.length === 0 && <p className="muted">No saved conversations yet. Every conversation is saved here after its first answer.</p>}
         {items && items.length > 0 && (
           <ul className="history-list">
             {items.map((item) => (

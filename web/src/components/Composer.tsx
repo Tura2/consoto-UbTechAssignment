@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export function Composer(props: { running: boolean; suggestion: string | null; onSend: (message: string) => void; onStop: () => void }) {
+export function Composer(props: { running: boolean; onSend: (message: string) => void; onStop: () => void }) {
   const [text, setText] = useState("");
   function submit() {
     const message = text.trim();
@@ -10,11 +10,6 @@ export function Composer(props: { running: boolean; suggestion: string | null; o
   }
   return (
     <footer className="composer">
-      {props.suggestion && !props.running && (
-        <button className="suggestion" onClick={() => props.onSend(props.suggestion!)}>
-          Next demo message: {props.suggestion}
-        </button>
-      )}
       <div className="composer-row">
         <textarea
           value={text}

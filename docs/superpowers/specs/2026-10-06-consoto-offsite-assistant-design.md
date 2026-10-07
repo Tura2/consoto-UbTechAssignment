@@ -432,7 +432,7 @@ OpenRouter `GET /key`, configured models still listed with tool support),
   (coverage per need, top places, gaps), `itinerary` (days, slots, venues,
   access notes).
 - Composer: Send becomes Stop while streaming; sending mid-turn aborts the turn.
-- Empty state: the three demo messages as clickable suggestions.
+- Empty state: a short explanation; the user types the messages. A finished demo conversation (, committed) shows under History.
 - Rendering: a reducer applies events to the current turn; answer text is
   appended; large JSON renders only when a step is expanded.
 - Styling: plain CSS with CSS variables; no UI framework.
