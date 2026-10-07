@@ -6,22 +6,22 @@ import { HowItWorks } from "./components/HowItWorks";
 import { TurnBlock } from "./components/TurnBlock";
 import { nextDemoMessage } from "./demo";
 import { useChat } from "./hooks/useChat";
-
-const NEAR_BOTTOM_PX = 120;
+import { keepFollowing } from "./scroll";
 
 export function App() {
   const chat = useChat();
   const [showHow, setShowHow] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const followRef = useRef(true);
+  const lastTopRef = useRef(0);
   const last = chat.turns[chat.turns.length - 1];
   useEffect(() => {
     if (followRef.current) endRef.current?.scrollIntoView({ block: "end" });
   }, [chat.turns.length, last?.answer.length, last?.steps.length, last?.cards.length]);
-  // Follow the stream only while the user is near the bottom, so expanding a step mid-stream does not jump.
+  // Follow the stream until the user scrolls up, so reading or expanding a step mid-stream does not jump.
   const onScroll = (event: UIEvent<HTMLElement>) => {
-    const { scrollHeight, scrollTop, clientHeight } = event.currentTarget;
-    followRef.current = scrollHeight - scrollTop - clientHeight < NEAR_BOTTOM_PX;
+    followRef.current = keepFollowing(followRef.current, lastTopRef.current, event.currentTarget);
+    lastTopRef.current = event.currentTarget.scrollTop;
   };
   const send = (message: string) => {
     followRef.current = true;
