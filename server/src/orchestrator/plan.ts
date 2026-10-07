@@ -6,7 +6,7 @@ import { AGENT_IDS } from "../agents/ids";
 import { AGENT_LIST } from "../agents/registry";
 import type { ChatMessage, Llm } from "../llm/openrouter";
 import { toChatTool } from "../llm/schema";
-import { TripUpdateSchema } from "./trip";
+import { TripUpdateSchema, applyTripUpdate, namedCandidates } from "./trip";
 
 // tripUpdate and agents are required (send {} or [] when there is nothing): with defaults the model saw
 // them as optional and sometimes sent only reason and clarify, which silently ran nothing.
@@ -72,9 +72,16 @@ export function parsePlan(json: string): { success: true; plan: Plan } | { succe
   return result.success ? { success: true, plan: result.data } : { success: false, error: z.prettifyError(result.error) };
 }
 
-// Weather, holidays and the itinerary need the search period in code; without it an agent would guess dates.
-// Seen live: "second half of March" with no searchPeriod in the plan, so no dates for the whole conversation.
-function missingSearchPeriod(plan: Plan, trip: Trip): string | null {
+// Problems code can see in a valid plan; the planner is asked once more. Both were seen live:
+// 1. A question about something the trip already has ("Which European cities?" when code fills the region's cities).
+// 2. Weather, holidays or the itinerary with no search period ("second half of March" but no searchPeriod),
+//    so an agent would guess dates and the conversation would never get any.
+function planProblem(plan: Plan, trip: Trip, message: string, today: string): string | null {
+  const next = applyTripUpdate(trip, namedCandidates(plan.tripUpdate, message), today);
+  const cities = next.city ? [next.city] : next.candidateCities;
+  if (plan.agents.length === 0 && plan.clarify && cities.length > 0 && next.searchWindow) {
+    return `Do not ask: the trip already has ${cities.join(", ")} and the dates ${next.searchWindow.from} to ${next.searchWindow.to}. Route the message to the agents`;
+  }
   const needsDates = plan.agents.some((entry) => entry.agent === "weather_calendar" || entry.agent === "itinerary");
   if (!needsDates || trip.searchWindow || trip.start || plan.tripUpdate.searchPeriod || plan.tripUpdate.startDay) return null;
   return "The trip has no dates yet. Set tripUpdate.searchPeriod from the user's words (month and part); leave it out only if the user named no time at all";
@@ -94,7 +101,7 @@ export async function makePlan(args: {
     ...args.history,
     { role: "user", content: args.message },
   ];
-  let usable: Plan | null = null; // a valid plan without a period, kept in case the second attempt fails
+  let usable: Plan | null = null; // a valid plan with a problem, kept in case the second attempt fails
   for (let attempt = 0; attempt < 2; attempt++) {
     const { message } = await args.llm.complete(
       {
@@ -110,10 +117,10 @@ export async function makePlan(args: {
     const call = message.tool_calls?.find((c) => c.type === "function" && c.function.name === "submit_plan");
     if (call && call.type === "function") {
       const parsed = parsePlan(call.function.arguments);
-      const missing = parsed.success ? missingSearchPeriod(parsed.plan, args.trip) : null;
-      if (parsed.success && (missing === null || attempt === 1)) return parsed.plan;
+      const problem = parsed.success ? planProblem(parsed.plan, args.trip, args.message, args.today) : null;
+      if (parsed.success && (problem === null || attempt === 1)) return parsed.plan;
       if (parsed.success) usable = parsed.plan;
-      const feedback = parsed.success ? `${missing}. Call submit_plan again.` : `Invalid plan: ${parsed.error}. Call submit_plan again with valid arguments.`;
+      const feedback = parsed.success ? `${problem}. Call submit_plan again.` : `Invalid plan: ${parsed.error}. Call submit_plan again with valid arguments.`;
       messages.push({ role: "assistant", content: message.content ?? null, tool_calls: [call] });
       messages.push({ role: "tool", tool_call_id: call.id, content: feedback });
     } else {

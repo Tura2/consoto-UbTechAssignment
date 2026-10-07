@@ -218,7 +218,9 @@ type Conversation = {
    are required (`{}` and `[]` when empty): with defaults the model treated them
    as optional and sometimes sent only `reason` and `clarify`. On invalid output
    it gets the zod error back once; if that also fails, the assistant asks the
-   user to rephrase. It is also asked once more when the plan runs
+   user to rephrase. It is also asked once more when the plan only asks a
+   question although the trip already has cities and dates (seen live on the
+   free model: "Which European cities?" for message 1), and when the plan runs
    `weather_calendar` or `itinerary` but neither the trip nor the plan has a
    search period or start date (seen live: "second half of March" with no
    `searchPeriod`); the second plan is accepted as it is, and if that attempt

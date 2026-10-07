@@ -75,6 +75,16 @@ describe("makePlan", () => {
     expect(plan.tripUpdate.searchPeriod).toEqual({ month: 3, part: "second_half" });
   });
 
+  it("asks once more when the plan only asks for something the trip already has", async () => {
+    // A real reply on the free model: message 1 asked "Which European cities?" although code fills the region's cities.
+    const asks = { tripUpdate: VALID.tripUpdate, agents: [], reason: "Need the cities.", clarify: "Which European cities would you like to consider?" };
+    const { llm, calls, requests } = scriptedLlm({ planner: [toolCall("submit_plan", asks), toolCall("submit_plan", VALID)] });
+    const plan = await makePlan({ ...args(llm), message: "Somewhere in Europe, second half of March. Where should we go?" });
+    expect(calls).toEqual(["planner", "planner"]);
+    expect(JSON.stringify(requests[1].messages.at(-1))).toContain("Do not ask");
+    expect(plan.agents).toHaveLength(2);
+  });
+
   it("keeps the first plan when the second attempt fails", async () => {
     const noPeriod = { ...VALID, tripUpdate: {} };
     const { llm } = scriptedLlm({ planner: [toolCall("submit_plan", noPeriod), text("Sorry.")] });
