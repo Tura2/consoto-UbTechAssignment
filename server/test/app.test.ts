@@ -20,7 +20,7 @@ function greetingLlm(hangFirstCall = false): Llm {
       if (hangFirstCall && calls === 1) {
         return new Promise((_, reject) => request.signal.addEventListener("abort", () => reject(request.signal.reason)));
       }
-      return Promise.resolve({ message: toolCall("submit_plan", { agents: [], reason: "Greeting." }), model: "fake" });
+      return Promise.resolve({ message: toolCall("submit_plan", { tripUpdate: {}, agents: [], reason: "Greeting." }), model: "fake" });
     },
     async stream(_request, _emit, onText) {
       onText("Hi Maya.");

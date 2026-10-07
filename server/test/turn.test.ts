@@ -63,6 +63,7 @@ describe("runTurn", () => {
     const { llm } = scriptedLlm({
       planner: [
         toolCall("submit_plan", {
+          tripUpdate: {},
           agents: [
             { agent: "budget_policy", task: "Total for Lisbon." },
             { agent: "itinerary", task: "Draft the 3 days in Lisbon." },
@@ -90,7 +91,7 @@ describe("runTurn", () => {
 
   it("asks a clarifying question without running agents", async () => {
     const { llm, calls } = scriptedLlm({
-      planner: [toolCall("submit_plan", { agents: [], reason: "I need the team.", clarify: "Which team is this offsite for?" })],
+      planner: [toolCall("submit_plan", { tripUpdate: {}, agents: [], reason: "I need the team.", clarify: "Which team is this offsite for?" })],
     });
     const { events, turn } = await turnWith(llm, "Plan an offsite.");
     expect(turn.answer).toBe("Which team is this offsite for?");
@@ -100,7 +101,7 @@ describe("runTurn", () => {
 
   it("reports an Overpass outage instead of inventing venues", async () => {
     const { llm, requests } = scriptedLlm({
-      planner: [toolCall("submit_plan", { agents: [{ agent: "venues", task: "Food in Lisbon." }], reason: "Food question." })],
+      planner: [toolCall("submit_plan", { tripUpdate: {}, agents: [{ agent: "venues", task: "Food in Lisbon." }], reason: "Food question." })],
       venues: [toolCall("places_find_for_team", { city: "Lisbon", team: "platform" }), text("The map service is down.")],
     });
     const down = fakeData({ overpass: async () => { throw new Error("OpenStreetMap (Overpass): HTTP 504"); } });
@@ -113,7 +114,7 @@ describe("runTurn", () => {
 
   it("handles an itinerary request with no city or dates", async () => {
     const { llm } = scriptedLlm({
-      planner: [toolCall("submit_plan", { agents: [{ agent: "itinerary", task: "Draft a plan." }], reason: "You asked for a plan." })],
+      planner: [toolCall("submit_plan", { tripUpdate: {}, agents: [{ agent: "itinerary", task: "Draft a plan." }], reason: "You asked for a plan." })],
       itinerary: [toolCall("itinerary_submit_plan", GOOD_PLAN), text("I need a city first.")],
     });
     const { events, turn } = await turnWith(llm, "Draft our offsite plan.");
@@ -124,7 +125,7 @@ describe("runTurn", () => {
 
   it("keeps the partial answer when the stream breaks", async () => {
     const llm: Llm = {
-      complete: async () => ({ message: toolCall("submit_plan", { agents: [], reason: "Greeting." }), model: "fake" }),
+      complete: async () => ({ message: toolCall("submit_plan", { tripUpdate: {}, agents: [], reason: "Greeting." }), model: "fake" }),
       stream: async (_request, _emit, onText) => {
         onText("Partial ");
         throw new LlmError("The answer was interrupted: socket closed", "interrupted");
@@ -154,7 +155,7 @@ describe("runTurn", () => {
 
   it("remembers earlier turns", async () => {
     const { llm, requests } = scriptedLlm({
-      planner: [toolCall("submit_plan", { agents: [], reason: "Greeting." }), toolCall("submit_plan", { agents: [], reason: "Follow-up." })],
+      planner: [toolCall("submit_plan", { tripUpdate: {}, agents: [], reason: "Greeting." }), toolCall("submit_plan", { tripUpdate: {}, agents: [], reason: "Follow-up." })],
     }, "Noted.");
     const conversation = createStore(newTrip).getOrCreate();
     await runTurn(conversation, "We like Lisbon.", deps(llm), () => {}, new AbortController().signal);
@@ -166,7 +167,7 @@ describe("runTurn", () => {
 
   it("keeps a successful tool result when the agent fails afterwards", async () => {
     const { llm } = scriptedLlm({
-      planner: [toolCall("submit_plan", { agents: [{ agent: "itinerary", task: "Draft" }], reason: "You asked for a plan." })],
+      planner: [toolCall("submit_plan", { tripUpdate: {}, agents: [{ agent: "itinerary", task: "Draft" }], reason: "You asked for a plan." })],
       venues: [toolCall("places_find_for_team", { city: "Lisbon", team: "platform" })],
       itinerary: [toolCall("itinerary_submit_plan", GOOD_PLAN), text("Drafted.")],
     });
@@ -181,7 +182,7 @@ describe("runTurn", () => {
   it("a stopped turn does not assume a start date", async () => {
     const controller = new AbortController();
     const { llm } = scriptedLlm({
-      planner: [toolCall("submit_plan", { agents: [{ agent: "budget_policy", task: "Total" }], reason: "Cost." })],
+      planner: [toolCall("submit_plan", { tripUpdate: {}, agents: [{ agent: "budget_policy", task: "Total" }], reason: "Cost." })],
     });
     const base = fakeData();
     const data = fakeData({
@@ -198,7 +199,7 @@ describe("runTurn", () => {
   });
 
   it("stores the cleaned answer on the turn", async () => {
-    const { llm } = scriptedLlm({ planner: [toolCall("submit_plan", { agents: [], reason: "Greeting." })] }, "Lisbon \u2013 sunny \u3010budget_estimate_cost\u3011.");
+    const { llm } = scriptedLlm({ planner: [toolCall("submit_plan", { tripUpdate: {}, agents: [], reason: "Greeting." })] }, "Lisbon \u2013 sunny \u3010budget_estimate_cost\u3011.");
     const { turn } = await turnWith(llm, "Hi");
     expect(turn.answer).toBe("Lisbon - sunny.");
   });
@@ -208,7 +209,7 @@ describe("runTurn", () => {
     const llm: Llm = {
       complete: async (_request, emit) => {
         lateEmit = emit;
-        return { message: toolCall("submit_plan", { agents: [], reason: "Greeting." }), model: "fake" };
+        return { message: toolCall("submit_plan", { tripUpdate: {}, agents: [], reason: "Greeting." }), model: "fake" };
       },
       stream: async () => ({ text: "", model: "" }),
     };
@@ -221,7 +222,7 @@ describe("runTurn", () => {
 
   it("gives the itinerary writer the current draft so a change request edits it", async () => {
     const first = scriptedLlm({
-      planner: [toolCall("submit_plan", { agents: [{ agent: "itinerary", task: "Draft" }], reason: "You asked for a plan." })],
+      planner: [toolCall("submit_plan", { tripUpdate: {}, agents: [{ agent: "itinerary", task: "Draft" }], reason: "You asked for a plan." })],
       venues: [toolCall("places_find_for_team", { city: "Lisbon", team: "platform" }), text("Found places.")],
       itinerary: [toolCall("itinerary_submit_plan", GOOD_PLAN), text("Drafted.")],
     });
@@ -229,7 +230,7 @@ describe("runTurn", () => {
       c.trip = { ...BASE_TRIP, city: "Lisbon" };
     });
     const second = scriptedLlm({
-      planner: [toolCall("submit_plan", { agents: [{ agent: "itinerary", task: "Swap day 2 dinner" }], reason: "You asked for a change." })],
+      planner: [toolCall("submit_plan", { tripUpdate: {}, agents: [{ agent: "itinerary", task: "Swap day 2 dinner" }], reason: "You asked for a change." })],
       itinerary: [toolCall("itinerary_submit_plan", GOOD_PLAN), text("Changed.")],
     });
     await runTurn(conversation, "Swap day 2 dinner.", deps(second.llm), () => {}, new AbortController().signal);

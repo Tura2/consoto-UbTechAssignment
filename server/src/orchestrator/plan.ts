@@ -8,12 +8,14 @@ import type { ChatMessage, Llm } from "../llm/openrouter";
 import { toChatTool } from "../llm/schema";
 import { TripUpdateSchema } from "./trip";
 
+// tripUpdate and agents are required (send {} or [] when there is nothing): with defaults the model saw
+// them as optional and sometimes sent only reason and clarify, which silently ran nothing.
 export const PlanSchema = z.object({
-  tripUpdate: TripUpdateSchema.default({}).describe("Only the trip facts the latest message adds or changes"),
+  tripUpdate: TripUpdateSchema.describe("Only the trip facts the latest message adds or changes ({} if none)"),
   agents: z
     .array(z.object({ agent: z.enum(AGENT_IDS), task: z.string().min(1).describe("A direct instruction with the cities, dates and team") }))
     .max(4)
-    .default([]),
+    .describe("The agents to run ([] only to answer without them or to ask the clarify question)"),
   reason: z.string().min(1).describe("One sentence for the user: why these agents"),
   clarify: z.string().optional().describe("A question to ask instead of running agents, only if essential information is missing"),
 });

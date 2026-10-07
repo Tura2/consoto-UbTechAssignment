@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { FALLBACK_PLAN, makePlan, parsePlan, plannerSystemPrompt } from "../src/orchestrator/plan";
+import { toChatTool } from "../src/llm/schema";
+import { FALLBACK_PLAN, PlanSchema, makePlan, parsePlan, plannerSystemPrompt } from "../src/orchestrator/plan";
 import { newTrip } from "../src/orchestrator/trip";
 import { scriptedLlm, text, toolCall } from "./helpers/fake-llm";
 
@@ -23,9 +24,23 @@ const args = (llm: ReturnType<typeof scriptedLlm>["llm"]) => ({
 });
 
 describe("parsePlan", () => {
-  it("accepts a valid plan and fills defaults", () => {
-    const result = parsePlan(JSON.stringify({ agents: [], reason: "Just a greeting." }));
+  it("accepts a plan with no agents when it says so explicitly", () => {
+    const result = parsePlan(JSON.stringify({ tripUpdate: {}, agents: [], reason: "Just a greeting." }));
     expect(result).toEqual({ success: true, plan: { tripUpdate: {}, agents: [], reason: "Just a greeting." } });
+  });
+
+  it("rejects a plan that leaves out agents or tripUpdate, so the model is asked again", () => {
+    // A real reply: the model put the task into clarify and sent no agents.
+    const result = parsePlan(JSON.stringify({ reason: "You confirmed Lisbon.", clarify: "I'll draft the 3 days in Lisbon." }));
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error).toMatch(/agents/);
+    expect(parsePlan(JSON.stringify({ agents: [], reason: "Hi." })).success).toBe(false);
+  });
+
+  it("tells the model that tripUpdate and agents are required", () => {
+    expect(toChatTool("submit_plan", "plan", PlanSchema)).toMatchObject({
+      function: { parameters: { required: expect.arrayContaining(["tripUpdate", "agents", "reason"]) } },
+    });
   });
 
   it("explains what is wrong", () => {
