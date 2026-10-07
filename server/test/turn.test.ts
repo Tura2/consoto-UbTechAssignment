@@ -99,6 +99,13 @@ describe("runTurn", () => {
     expect(calls).toEqual(["planner"]);
   });
 
+  it("reads the search period from the user's words when the plan leaves it out", async () => {
+    const noPeriod = { ...M1_PLAN, tripUpdate: { team: "platform", region: "Europe", days: 3 }, agents: [{ agent: "budget_policy", task: "Compare." }] };
+    const { llm } = scriptedLlm({ planner: [toolCall("submit_plan", noPeriod)], budget_policy: [text("Compared.")] });
+    const { conversation } = await turnWith(llm, "Somewhere in Europe, second half of March. Where should we go?");
+    expect(conversation.trip.searchWindow).toEqual(MARCH);
+  });
+
   it("tells the comparison agents the trip's cities, whatever cities the planner wrote in the task", async () => {
     // Seen live: on message 1 the planner wrote tasks for "Lisbon, Prague, Barcelona, and Amsterdam".
     const guessed = { ...M1_PLAN, agents: [{ agent: "budget_policy", task: "Compare Lisbon, Prague, Barcelona and Amsterdam." }] };

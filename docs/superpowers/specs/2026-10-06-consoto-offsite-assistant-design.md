@@ -223,8 +223,12 @@ type Conversation = {
    free model: "Which European cities?" for message 1), and when the plan runs
    `weather_calendar` or `itinerary` but neither the trip nor the plan has a
    search period or start date (seen live: "second half of March" with no
-   `searchPeriod`); the second plan is accepted as it is, and if that attempt
-   fails the first plan still runs.
+   `searchPeriod`); the second plan is accepted as it is (merged over the first plan's trip facts,
+   since a retry often sends only its corrections), and if that attempt fails
+   the first plan still runs. The period retry is skipped when the message names
+   a month: code then reads the month and its part from the user's words
+   (`periodFromMessage`, used only while the trip has no dates), because free
+   models sometimes drop `searchPeriod` even when asked twice.
 2. **Update the trip (code).** Resolve `searchPeriod` to ISO dates (16th to the
    last day for `second_half`) and its year; resolve `startDay` to an ISO date
    inside the search window (or the next occurrence of that date if there is no

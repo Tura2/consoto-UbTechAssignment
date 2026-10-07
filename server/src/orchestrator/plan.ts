@@ -6,7 +6,7 @@ import { AGENT_IDS } from "../agents/ids";
 import { AGENT_LIST } from "../agents/registry";
 import type { ChatMessage, Llm } from "../llm/openrouter";
 import { toChatTool } from "../llm/schema";
-import { TripUpdateSchema, applyTripUpdate, namedCandidates } from "./trip";
+import { TripUpdateSchema, applyTripUpdate, namedCandidates, periodFromMessage } from "./trip";
 
 // tripUpdate and agents are required (send {} or [] when there is nothing): with defaults the model saw
 // them as optional and sometimes sent only reason and clarify, which silently ran nothing.
@@ -84,6 +84,7 @@ function planProblem(plan: Plan, trip: Trip, message: string, today: string): st
   }
   const needsDates = plan.agents.some((entry) => entry.agent === "weather_calendar" || entry.agent === "itinerary");
   if (!needsDates || trip.searchWindow || trip.start || plan.tripUpdate.searchPeriod || plan.tripUpdate.startDay) return null;
+  if (periodFromMessage(message)) return null; // code reads the period from the user's words (fillPeriod)
   return "The trip has no dates yet. Set tripUpdate.searchPeriod from the user's words (month and part); leave it out only if the user named no time at all";
 }
 
@@ -118,7 +119,10 @@ export async function makePlan(args: {
     if (call && call.type === "function") {
       const parsed = parsePlan(call.function.arguments);
       const problem = parsed.success ? planProblem(parsed.plan, args.trip, args.message, args.today) : null;
-      if (parsed.success && (problem === null || attempt === 1)) return parsed.plan;
+      // A retry often sends only its corrections, so the first attempt's trip facts are kept underneath.
+      if (parsed.success && (problem === null || attempt === 1)) {
+        return usable ? { ...parsed.plan, tripUpdate: { ...usable.tripUpdate, ...parsed.plan.tripUpdate } } : parsed.plan;
+      }
       if (parsed.success) usable = parsed.plan;
       const feedback = parsed.success ? `${problem}. Call submit_plan again.` : `Invalid plan: ${parsed.error}. Call submit_plan again with valid arguments.`;
       messages.push({ role: "assistant", content: message.content ?? null, tool_calls: [call] });

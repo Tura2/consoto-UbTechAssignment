@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AgentResult } from "../src/agents/runner";
-import { applyTripUpdate, depsKey, dropStaleFindings, namedCandidates, newTrip } from "../src/orchestrator/trip";
+import { applyTripUpdate, depsKey, dropStaleFindings, fillPeriod, namedCandidates, newTrip, periodFromMessage } from "../src/orchestrator/trip";
 import { createStore, historyMessages } from "../src/state/conversations";
 
 const TODAY = "2026-10-06";
@@ -115,3 +115,32 @@ describe("namedCandidates", () => {
   });
 });
 
+// The planner gives the period as a meaning; when a free model drops it, code reads the user's own words.
+describe("periodFromMessage", () => {
+  it("reads a month and the part of it", () => {
+    expect(periodFromMessage("somewhere in Europe, second half of March. Where should we go?")).toEqual({ month: 3, part: "second_half" });
+    expect(periodFromMessage("late march please")).toEqual({ month: 3, part: "second_half" });
+    expect(periodFromMessage("Early April works")).toEqual({ month: 4, part: "first_half" });
+    expect(periodFromMessage("Any time in June")).toEqual({ month: 6, part: "whole" });
+    expect(periodFromMessage("in May")).toEqual({ month: 5, part: "whole" });
+  });
+
+  it("finds nothing when no month is named", () => {
+    expect(periodFromMessage("Lisbon sounds good. What's the weather usually like then?")).toBeNull();
+    expect(periodFromMessage("We may want to make it 4 days")).toBeNull();
+  });
+});
+
+describe("fillPeriod", () => {
+  const empty = newTrip();
+  it("fills a period the plan left out, from the message, when the trip has none", () => {
+    expect(fillPeriod({ team: "platform" }, "second half of March", empty)).toEqual({ team: "platform", searchPeriod: { month: 3, part: "second_half" } });
+  });
+
+  it("keeps the plan's own period, and never overrides a trip that already has dates", () => {
+    const planned = { searchPeriod: { month: 4, part: "whole" as const } };
+    expect(fillPeriod(planned, "second half of March", empty)).toEqual(planned);
+    const dated = applyTripUpdate(empty, { searchPeriod: { month: 3, part: "second_half" } }, TODAY);
+    expect(fillPeriod({}, "what about April?", dated)).toEqual({});
+  });
+});

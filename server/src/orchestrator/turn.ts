@@ -19,7 +19,7 @@ import { buildAnswerContext, streamAnswer } from "./answer";
 import { buildCards } from "./cards";
 import { makePlan, type Plan } from "./plan";
 import { lastToolData } from "./tool-data";
-import { applyTripUpdate, depsKey, dropStaleFindings, focusCities, namedCandidates } from "./trip";
+import { applyTripUpdate, depsKey, dropStaleFindings, fillPeriod, focusCities, namedCandidates } from "./trip";
 
 export type TurnDeps = { llm: Llm; data: DataSources; today: () => string; agentPhaseMs?: number };
 
@@ -61,7 +61,8 @@ export async function runTurn(conversation: Conversation, message: string, deps:
     const today = deps.today();
     const plan = await makePlan({ llm: deps.llm, history, message, trip: conversation.trip, today, signal, emit });
     signal.throwIfAborted(); // never change the trip for a turn the user already left
-    conversation.trip = applyTripUpdate(conversation.trip, namedCandidates(plan.tripUpdate, message), today);
+    const update = fillPeriod(namedCandidates(plan.tripUpdate, message), message, conversation.trip);
+    conversation.trip = applyTripUpdate(conversation.trip, update, today);
     dropStaleFindings(conversation);
     // A plan that names agents can proceed: ask the question only when there is nothing to run.
     const clarify = plan.agents.length === 0 && plan.clarify ? plan.clarify : null;

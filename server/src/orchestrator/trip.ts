@@ -67,6 +67,32 @@ export function namedCandidates(update: TripUpdate, message: string): TripUpdate
   return { ...update, candidateCities: named?.length ? named : undefined };
 }
 
+const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+
+// A month named in the user's words, and which part of it. "May" counts only after "in", "of", "during",
+// "early", "mid" or "late", so "we may want" is not a month.
+export function periodFromMessage(message: string): TripUpdate["searchPeriod"] | null {
+  const text = message.toLowerCase();
+  const index = MONTHS.findIndex((month) =>
+    month === "may" ? /\b(in|of|during|early|mid|late)\s+may\b/.test(text) : new RegExp(`\\b${month}\\b`).test(text),
+  );
+  if (index === -1) return null;
+  const part = /\b(second|latter|last) half\b|\blate\b|\bend of\b/.test(text)
+    ? "second_half"
+    : /\bfirst half\b|\bearly\b|\b(beginning|start) of\b/.test(text)
+      ? "first_half"
+      : "whole";
+  return { month: index + 1, part };
+}
+
+// Free models sometimes drop the search period even when asked again (seen live), and an agent would then guess
+// the dates. When the trip has no dates yet, code reads the period from the user's words instead.
+export function fillPeriod(update: TripUpdate, message: string, trip: Trip): TripUpdate {
+  if (update.searchPeriod || trip.searchWindow) return update;
+  const period = periodFromMessage(message);
+  return period ? { ...update, searchPeriod: period } : update;
+}
+
 export function focusCities(trip: Trip): string[] {
   return trip.city ? [trip.city] : trip.candidateCities;
 }

@@ -85,6 +85,22 @@ describe("makePlan", () => {
     expect(plan.agents).toHaveLength(2);
   });
 
+  it("does not ask for a period the user's message names (code reads it)", async () => {
+    const noPeriod = { ...VALID, tripUpdate: { team: "platform", region: "Europe" } };
+    const { llm, calls } = scriptedLlm({ planner: [toolCall("submit_plan", noPeriod)] });
+    await makePlan({ ...args(llm), message: "Somewhere in Europe, second half of March. Where should we go?" });
+    expect(calls).toEqual(["planner"]);
+  });
+
+  it("keeps the trip facts of the first attempt when the second sends only its corrections", async () => {
+    const asks = { tripUpdate: VALID.tripUpdate, agents: [], reason: "Need the cities.", clarify: "Which cities?" };
+    const corrected = { tripUpdate: {}, agents: VALID.agents, reason: VALID.reason };
+    const { llm } = scriptedLlm({ planner: [toolCall("submit_plan", asks), toolCall("submit_plan", corrected)] });
+    const plan = await makePlan({ ...args(llm), message: "Somewhere in Europe, second half of March. Where should we go?" });
+    expect(plan.tripUpdate).toEqual(VALID.tripUpdate);
+    expect(plan.agents).toHaveLength(2);
+  });
+
   it("keeps the first plan when the second attempt fails", async () => {
     const noPeriod = { ...VALID, tripUpdate: {} };
     const { llm } = scriptedLlm({ planner: [toolCall("submit_plan", noPeriod), text("Sorry.")] });
