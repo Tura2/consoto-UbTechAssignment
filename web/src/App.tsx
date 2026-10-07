@@ -1,35 +1,47 @@
-import { useEffect, useRef, useState } from "react";
+import { type UIEvent, useEffect, useRef, useState } from "react";
 import { Composer } from "./components/Composer";
 import { EmptyState } from "./components/EmptyState";
 import { Header } from "./components/Header";
 import { HowItWorks } from "./components/HowItWorks";
 import { TurnBlock } from "./components/TurnBlock";
-import { DEMO_MESSAGES } from "./demo";
+import { nextDemoMessage } from "./demo";
 import { useChat } from "./hooks/useChat";
+
+const NEAR_BOTTOM_PX = 120;
 
 export function App() {
   const chat = useChat();
   const [showHow, setShowHow] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const followRef = useRef(true);
   const last = chat.turns[chat.turns.length - 1];
   useEffect(() => {
-    endRef.current?.scrollIntoView({ block: "end" });
+    if (followRef.current) endRef.current?.scrollIntoView({ block: "end" });
   }, [chat.turns.length, last?.answer.length, last?.steps.length, last?.cards.length]);
+  // Follow the stream only while the user is near the bottom, so expanding a step mid-stream does not jump.
+  const onScroll = (event: UIEvent<HTMLElement>) => {
+    const { scrollHeight, scrollTop, clientHeight } = event.currentTarget;
+    followRef.current = scrollHeight - scrollTop - clientHeight < NEAR_BOTTOM_PX;
+  };
+  const send = (message: string) => {
+    followRef.current = true;
+    chat.send(message);
+  };
   const count = chat.turns.length;
-  const suggestion = count > 0 && count < DEMO_MESSAGES.length ? DEMO_MESSAGES[count] : null;
+  const suggestion = nextDemoMessage(chat.turns);
 
   return (
     <div className="app">
       <Header onHowItWorks={() => setShowHow(true)} onNewChat={chat.newChat} />
-      <main className="chat">
+      <main className="chat" onScroll={onScroll}>
         {count === 0 ? (
-          <EmptyState onPick={chat.send} />
+          <EmptyState onPick={send} />
         ) : (
-          chat.turns.map((turn) => <TurnBlock key={turn.id} turn={turn} onRetry={() => chat.send(turn.userMessage)} />)
+          chat.turns.map((turn) => <TurnBlock key={turn.id} turn={turn} onRetry={() => send(turn.userMessage)} />)
         )}
         <div ref={endRef} />
       </main>
-      <Composer running={chat.running} suggestion={suggestion} onSend={chat.send} onStop={chat.stop} />
+      <Composer running={chat.running} suggestion={suggestion} onSend={send} onStop={chat.stop} />
       {showHow && <HowItWorks onClose={() => setShowHow(false)} />}
     </div>
   );
