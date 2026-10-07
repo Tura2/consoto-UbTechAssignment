@@ -77,7 +77,7 @@ export async function runTool(tool: AnyTool, rawInput: unknown, ctx: ToolContext
   }
 }
 
-export function toolEndEvent(callId: string, result: ToolResult, ms: number): StreamEvent {
+function toolEndEvent(callId: string, result: ToolResult, ms: number): StreamEvent {
   return result.ok
     ? {
         type: "tool_end",

@@ -76,12 +76,12 @@ ${COMMON_RULES}`,
 
 export const AGENT_LIST: AgentDef[] = Object.values(AGENTS);
 
-export const ROUTING_TEXT =
+const ROUTING_TEXT =
   "One LLM call reads the message and the trip so far and returns a plan: which agents to run, what to ask each, and why. " +
   "Code checks the plan, updates the trip facts (dates are computed in code), runs the agents (in parallel when they do not depend on each other), " +
   "always runs the policy check itself, and builds the result cards. A final LLM call writes the answer from the agents' data.";
 
-export const CODE_VS_MODEL_TEXT =
+const CODE_VS_MODEL_TEXT =
   "Code computes every number, date and rule: costs, the ECB conversion, holiday windows, climate averages, venue matching, " +
   "the itinerary check and the policy verdict. The model decides which agents and tools to use, with which arguments, and writes the wording and the recommendation.";
 

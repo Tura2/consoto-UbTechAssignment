@@ -17,10 +17,14 @@ export type Turn = {
 
 export type Finding = { depsKey: string; result: AgentResult };
 
+// Later turns reuse only these results: the venue list (the itinerary may only use its places) and the draft
+// (the policy check reads it, and a change request edits it).
+export type RememberedAgent = "venues" | "itinerary";
+
 export type Conversation = {
   id: string;
   trip: Trip;
-  findings: Partial<Record<AgentId, Finding>>;
+  findings: Partial<Record<RememberedAgent, Finding>>;
   turns: Turn[];
   updatedAt: string;
   active: AbortController | null;

@@ -1,9 +1,9 @@
 // Trip facts owned by code. The planner says what changed; this module turns it into facts.
 import { z } from "zod";
-import type { AgentId, Trip } from "../../../shared/domain";
+import type { Trip } from "../../../shared/domain";
 import { citiesInRegion, getPolicy, matchCity, normalizeTeamId } from "../data/consoto-data";
 import { resolveSearchPeriod, resolveStartDay } from "../domain/dates";
-import type { Conversation } from "../state/conversations";
+import type { Conversation, RememberedAgent } from "../state/conversations";
 
 export const TripUpdateSchema = z.object({
   team: z.string().optional().describe('Team id or name, for example "platform"'),
@@ -97,13 +97,9 @@ export function focusCities(trip: Trip): string[] {
   return trip.city ? [trip.city] : trip.candidateCities;
 }
 
-// The trip facts each agent's result depends on. When they change, the old result is dropped.
-export function depsKey(agent: AgentId, trip: Trip): string {
+// The trip facts the venue list and the draft depend on. When they change, the old result is dropped.
+export function depsKey(agent: RememberedAgent, trip: Trip): string {
   switch (agent) {
-    case "budget_policy":
-      return JSON.stringify([focusCities(trip), trip.days, trip.team]);
-    case "weather_calendar":
-      return JSON.stringify([focusCities(trip), trip.searchWindow, trip.days]);
     case "venues":
       return JSON.stringify([trip.city, trip.team]);
     case "itinerary":
@@ -112,7 +108,7 @@ export function depsKey(agent: AgentId, trip: Trip): string {
 }
 
 export function dropStaleFindings(conversation: Conversation): void {
-  for (const agent of Object.keys(conversation.findings) as AgentId[]) {
+  for (const agent of Object.keys(conversation.findings) as RememberedAgent[]) {
     if (conversation.findings[agent]?.depsKey !== depsKey(agent, conversation.trip)) delete conversation.findings[agent];
   }
 }

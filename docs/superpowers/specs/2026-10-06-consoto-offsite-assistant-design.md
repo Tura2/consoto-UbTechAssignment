@@ -105,7 +105,7 @@ package.json            npm workspaces (server, web) and root scripts
 shared/                 domain.ts (trip, results) and events.ts (stream events, cards, API payloads), types only; text.ts (cleanAnswer, the one runtime import)
 server/src/
   index.ts              entry point: loads .env, config, starts the server, prints the health check
-  app.ts                Express routes: POST /api/chat (SSE), GET /api/conversations/:id, /api/health, /api/agents, static web/dist
+  app.ts                Express routes: POST /api/chat (SSE), GET /api/conversations (History list), GET /api/conversations/:id, /api/health, /api/agents, static web/dist
   config.ts             reads and validates env
   health.ts, runtime.ts OpenRouter health check; builds the real dependencies
   orchestrator/         plan.ts, trip.ts, turn.ts, answer.ts, cards.ts, tool-data.ts
@@ -121,9 +121,11 @@ server/src/
   scripts/              warm-cache.ts, eval.ts, check-models.ts
   evals/                scenarios.ts, graders.ts
 server/test/            unit tests (vitest) and fixtures recorded from live API calls
-web/src/                main.tsx, App.tsx, api.ts, sse.ts, demo.ts, format.ts, components/, hooks/useChat.ts, state/turnReducer.ts
+web/src/                main.tsx, App.tsx, api.ts, sse.ts, styles.css; pure helpers with tests: format.ts, progress.ts, sources.ts, trip.ts, calendar.ts, scroll.ts
+  components/           Header, TripBar, EmptyState, TurnBlock, ProgressStrip, Cards, Composer, Drawer, HistoryPanel, HowItWorks, Elapsed, icons (agent colours and status icons)
+  hooks/, state/        useChat.ts, useNow.ts, useEscape.ts; turnReducer.ts (stream events to the turn view)
 docs/                   research, API guide, specs, plans
-.cache/                 disk cache for API responses (gitignored)
+.cache/                 disk cache for API responses and saved conversations (gitignored, except the demo conversation conversations/demo-lisbon.json)
 evals/runs/             eval transcripts (gitignored)
 ```
 
@@ -187,7 +189,7 @@ type Trip = {
 type Conversation = {
   id: string;
   trip: Trip;
-  findings: Partial<Record<AgentId, { depsKey: string; result: AgentResult }>>;
+  findings: Partial<Record<"venues" | "itinerary", { depsKey: string; result: AgentResult }>>;
   turns: Turn[];                          // user message, events, answer text, status
   updatedAt: string;                      // ISO time of the last save
   activeTurn: AbortController | null;
@@ -260,10 +262,13 @@ type Conversation = {
 
 ### Findings dependencies
 
+Later turns reuse only two results: the venue list (the itinerary may only use
+its places) and the draft (the policy check reads it, and a change request
+edits it). Cost, holidays and weather are cheap to recompute from the cache, so
+they are not kept.
+
 | Agent | `depsKey` built from |
 | --- | --- |
-| budget_policy | cities, days, nights, team |
-| weather_calendar | cities, searchWindow, days |
 | venues | city, team |
 | itinerary | city, start, days, team |
 

@@ -24,7 +24,7 @@ import { applyTripUpdate, depsKey, dropStaleFindings, fillPeriod, focusCities, n
 export type TurnDeps = { llm: Llm; data: DataSources; today: () => string; agentPhaseMs?: number };
 
 // Findings from earlier turns that tools may read (the venue list and the latest itinerary).
-export function findingsView(conversation: Conversation): Findings {
+function findingsView(conversation: Conversation): Findings {
   const venues = conversation.findings.venues
     ? lastToolData<VenuesResult>([conversation.findings.venues.result], "places_find_for_team")
     : null;
@@ -119,7 +119,10 @@ async function runAgents(
       emit,
     });
     // Keep any successful tool result, even if the agent failed afterwards. A turn the user left saves nothing.
-    if (!signal.aborted && result.toolRuns.some((run) => run.result.ok)) conversation.findings[agent] = { depsKey: depsKey(agent, conversation.trip), result };
+    const remembered = agent === "venues" || agent === "itinerary";
+    if (remembered && !signal.aborted && result.toolRuns.some((run) => run.result.ok)) {
+      conversation.findings[agent] = { depsKey: depsKey(agent, conversation.trip), result };
+    }
     return result;
   };
   const firstPhase = await Promise.all([...tasks.keys()].filter((agent) => agent !== "itinerary").map(runOne));

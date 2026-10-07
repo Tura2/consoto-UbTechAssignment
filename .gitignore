@@ -8,13 +8,6 @@ node_modules/
 dist/
 build/
 .vite/
-__pycache__/
-*.pyc
-.venv/
-venv/
-.pytest_cache/
-.ruff_cache/
-.mypy_cache/
 coverage/
 
 # Runtime caches and logs. One finished demo conversation is committed so it shows under History after a clone.

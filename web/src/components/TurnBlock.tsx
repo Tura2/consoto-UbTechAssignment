@@ -9,7 +9,7 @@ import { sourceGroups } from "../sources";
 import type { AgentView, StepView, TurnView } from "../state/turnReducer";
 import { CardView } from "./Cards";
 import { Elapsed } from "./Elapsed";
-import { OWNER_ICON, StatusIcon, ownerName, toneClass, type Owner } from "./icons";
+import { OWNER_ICON, OwnerTag, StatusIcon, toneClass } from "./icons";
 import { ProgressStrip } from "./ProgressStrip";
 
 // Models write GitHub-flavored markdown (tables included) even when asked not to; render it instead of showing pipes.
@@ -92,16 +92,6 @@ function PlanningLine({ turn }: { turn: TurnView }) {
   );
 }
 
-function OwnerChip({ owner }: { owner: Owner }) {
-  const Icon = OWNER_ICON[owner];
-  return (
-    <span className={`chip owner-chip ${toneClass(owner)}`}>
-      <Icon size={14} aria-hidden="true" />
-      {ownerName(owner)}
-    </span>
-  );
-}
-
 function PlanLine({ turn }: { turn: TurnView }) {
   const plan = turn.plan!;
   return (
@@ -112,7 +102,7 @@ function PlanLine({ turn }: { turn: TurnView }) {
         <>
           <span>runs</span>
           {plan.agents.map((entry) => (
-            <OwnerChip key={entry.agent} owner={entry.agent} />
+            <OwnerTag key={entry.agent} owner={entry.agent} />
           ))}
         </>
       )}

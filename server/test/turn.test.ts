@@ -53,6 +53,7 @@ describe("runTurn", () => {
     expect(turn.status).toBe("done");
     expect(turn.answer).toBe("Lisbon looks best.");
     expect(conversation.trip.searchWindow).toEqual(MARCH);
+    expect(conversation.findings).toEqual({}); // later turns reuse only the venue list and the draft
     const comparison = cardsOf(events).find((card) => card.kind === "comparison");
     expect(comparison?.kind === "comparison" && comparison.rows.find((r) => r.city === "Lisbon")).toMatchObject({ perPersonIls: 3036, cleanWindows: 5 });
     expect(cardsOf(events).some((card) => card.kind === "policy")).toBe(false);

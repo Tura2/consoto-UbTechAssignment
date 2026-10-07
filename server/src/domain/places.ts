@@ -1,7 +1,7 @@
 // Reading OpenStreetMap places for the team's needs. A missing tag means "unknown", never "yes".
 import type { DietNeed, Place, VenuesResult, Wheelchair } from "../../../shared/domain";
 
-export const DIET_TAGS: Record<DietNeed, string> = {
+const DIET_TAGS: Record<DietNeed, string> = {
   vegan: "diet:vegan",
   kosher: "diet:kosher",
   gluten_free: "diet:gluten_free",
@@ -59,7 +59,7 @@ export function toPlace(raw: unknown): Place | null {
   };
 }
 
-export function rankFood(places: Place[], needs: DietNeed[]): Place[] {
+function rankFood(places: Place[], needs: DietNeed[]): Place[] {
   const covered = (place: Place) => place.diets.filter((diet) => needs.includes(diet)).length;
   return [...places].sort(
     (a, b) =>

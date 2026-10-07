@@ -29,7 +29,7 @@ function truncate(data: unknown, max = 3_000): unknown {
 const brief = (place: Place) => `${place.name} [${place.diets.join(", ") || "no diet tags"}; wheelchair ${place.wheelchair}]`;
 
 // What the answer model needs from each tool, without the bulk.
-export function compactForAnswer(tool: string, data: unknown): unknown {
+function compactForAnswer(tool: string, data: unknown): unknown {
   switch (tool) {
     case "budget_estimate_cost": {
       const cost = data as CostData;

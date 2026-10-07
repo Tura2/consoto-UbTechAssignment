@@ -2,18 +2,18 @@ import type { HolidayItem, Source } from "../../../shared/domain";
 import type { DataSources } from "../../src/clients/data-sources";
 import overpass from "../fixtures/overpass-lisbon.json";
 
-export const ISRAEL_MARCH_2027: HolidayItem[] = [
+const ISRAEL_MARCH_2027: HolidayItem[] = [
   { date: "2027-03-22", name: "Erev Purim", side: "israel", country: "Israel", source: "Hebcal" },
   { date: "2027-03-23", name: "Purim", side: "israel", country: "Israel", source: "Hebcal" },
   { date: "2027-03-24", name: "Shushan Purim", side: "israel", country: "Israel", source: "Hebcal" },
 ];
 
-export const PORTUGAL_2027: HolidayItem[] = [
+const PORTUGAL_2027: HolidayItem[] = [
   { date: "2027-03-26", name: "Good Friday", side: "destination", country: "Portugal", source: "Nager.Date" },
   { date: "2027-03-28", name: "Easter Sunday", side: "destination", country: "Portugal", source: "Nager.Date" },
 ];
 
-export const CZECHIA_2027: HolidayItem[] = [
+const CZECHIA_2027: HolidayItem[] = [
   { date: "2027-03-26", name: "Good Friday", side: "destination", country: "Czechia", source: "Nager.Date" },
   { date: "2027-03-29", name: "Easter Monday", side: "destination", country: "Czechia", source: "Nager.Date" },
 ];

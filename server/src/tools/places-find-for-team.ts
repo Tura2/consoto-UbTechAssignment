@@ -4,7 +4,7 @@ import { getDestination, getTeam, listTeams, teamNeeds } from "../data/consoto-d
 import { DIET_LABELS, buildPlacesQuery, summarizeVenues, toPlace } from "../domain/places";
 import { defineTool, fail, ok } from "./types";
 
-export const RADIUS_M = 3000;
+const RADIUS_M = 3000;
 
 export const placesFindForTeam = defineTool({
   name: "places_find_for_team",
