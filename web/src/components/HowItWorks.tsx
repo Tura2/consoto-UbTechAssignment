@@ -1,7 +1,9 @@
+import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { AgentsInfo } from "../../../shared/events";
 import { getAgents } from "../api";
 import { useEscape } from "../hooks/useEscape";
+import { OWNER_ICON, toneClass } from "./icons";
 
 export function HowItWorks({ onClose }: { onClose: () => void }) {
   const [info, setInfo] = useState<AgentsInfo | null>(null);
@@ -17,7 +19,9 @@ export function HowItWorks({ onClose }: { onClose: () => void }) {
       <aside className="drawer" role="dialog" aria-modal="true" aria-labelledby="how-title" onClick={(event) => event.stopPropagation()}>
         <div className="drawer-head">
           <h2 id="how-title">How it works</h2>
-          <button onClick={onClose}>Close</button>
+          <button className="icon-button" onClick={onClose} aria-label="Close">
+            <X size={18} aria-hidden="true" />
+          </button>
         </div>
         {error && <p className="notice bad">{error}</p>}
         {!error && !info && <p className="muted">Loading...</p>}
@@ -26,9 +30,13 @@ export function HowItWorks({ onClose }: { onClose: () => void }) {
             <h3>The orchestrator</h3>
             <p>{info.routing}</p>
             <h3>The agents</h3>
-            {info.agents.map((agent) => (
-              <section key={agent.id} className="agent-card">
-                <h4>{agent.name}</h4>
+            {info.agents.map((agent) => {
+              const Icon = OWNER_ICON[agent.id];
+              return (
+              <section key={agent.id} className={`agent-card ${toneClass(agent.id)}`}>
+                <h4>
+                  <Icon size={16} className="tone-icon" aria-hidden="true" /> {agent.name}
+                </h4>
                 <p>{agent.purpose}</p>
                 <ul>
                   {agent.tools.map((tool) => (
@@ -39,7 +47,8 @@ export function HowItWorks({ onClose }: { onClose: () => void }) {
                   ))}
                 </ul>
               </section>
-            ))}
+              );
+            })}
             <h3>Code vs model</h3>
             <p>{info.codeVsModel}</p>
           </>

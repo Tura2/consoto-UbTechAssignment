@@ -1,3 +1,4 @@
+import { MessageSquare, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { ConversationSummary } from "../../../shared/events";
 import { listConversations } from "../api";
@@ -30,7 +31,9 @@ export function HistoryPanel({ currentId, onOpen, onClose }: Props) {
       <aside className="drawer" role="dialog" aria-modal="true" aria-labelledby="history-title" onClick={(event) => event.stopPropagation()}>
         <div className="drawer-head">
           <h2 id="history-title">History</h2>
-          <button onClick={onClose}>Close</button>
+          <button className="icon-button" onClick={onClose} aria-label="Close">
+            <X size={18} aria-hidden="true" />
+          </button>
         </div>
         {error && <p className="notice bad">{error}</p>}
         {!error && !items && <p className="muted">Loading...</p>}
@@ -40,6 +43,7 @@ export function HistoryPanel({ currentId, onOpen, onClose }: Props) {
             {items.map((item) => (
               <li key={item.id}>
                 <button className="history-row" onClick={() => open(item.id)} aria-current={item.id === currentId ? "true" : undefined}>
+                  <MessageSquare size={16} className="history-icon" aria-hidden="true" />
                   <strong>{item.title}</strong>
                   <span className="muted">
                     {dateTime(item.updatedAt)}, {item.turns} {item.turns === 1 ? "turn" : "turns"}

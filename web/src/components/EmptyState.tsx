@@ -1,3 +1,8 @@
+import type { AgentId } from "../../../shared/domain";
+import { OWNER_ICON, ownerName, toneClass } from "./icons";
+
+const AGENTS: AgentId[] = ["budget_policy", "weather_calendar", "venues", "itinerary"];
+
 export function EmptyState() {
   return (
     <div className="empty">
@@ -5,6 +10,17 @@ export function EmptyState() {
       <p className="muted">
         Ask in plain words. Every answer shows which agent worked, which tools it called and what came back, with sources.
       </p>
+      <ul className="agent-row" aria-label="The agents">
+        {AGENTS.map((agent) => {
+          const Icon = OWNER_ICON[agent];
+          return (
+            <li key={agent} className={toneClass(agent)}>
+              <Icon size={18} className="tone-icon" aria-hidden="true" />
+              {ownerName(agent)}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

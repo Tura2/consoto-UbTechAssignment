@@ -1,3 +1,4 @@
+import { CalendarDays, CalendarRange, MapPin, Users, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { Trip } from "../../../shared/domain";
 import { changedFields, tripSummary, type TripField } from "../trip";
@@ -22,17 +23,18 @@ export function TripBar({ trip }: { trip: Trip | null }) {
   }, [summaryKey]);
 
   if (!summary) return null;
-  const items: { field: TripField; label: string; value: string | null }[] = [
-    { field: "team", label: "Team", value: summary.team },
-    { field: "place", label: "Where", value: summary.place },
-    { field: "dates", label: "When", value: summary.dates },
-    { field: "length", label: "Length", value: summary.length },
+  const items: { field: TripField; label: string; icon: LucideIcon; value: string | null }[] = [
+    { field: "team", label: "Team", icon: Users, value: summary.team },
+    { field: "place", label: "Where", icon: MapPin, value: summary.place },
+    { field: "dates", label: "When", icon: CalendarDays, value: summary.dates },
+    { field: "length", label: "Length", icon: CalendarRange, value: summary.length },
   ];
   return (
     <div className="tripbar" aria-label="Current trip">
       {items.map((item) =>
         item.value ? (
           <span key={item.field} className={`trip-item ${flashing.includes(item.field) ? "flash" : ""}`}>
+            <item.icon size={14} aria-hidden="true" />
             <span className="muted">{item.label}</span> <strong>{item.value}</strong>
           </span>
         ) : null,

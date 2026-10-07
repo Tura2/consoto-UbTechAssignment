@@ -1,3 +1,4 @@
+import { ChevronRight, CircleAlert, CircleCheck, CircleStop, Database, Gauge, Hourglass, Link2, LoaderCircle, RefreshCw, Timer } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -8,10 +9,12 @@ import { sourceGroups } from "../sources";
 import type { AgentView, StepView, TurnView } from "../state/turnReducer";
 import { CardView } from "./Cards";
 import { Elapsed } from "./Elapsed";
+import { OWNER_ICON, StatusIcon, ownerName, toneClass, type Owner } from "./icons";
 import { ProgressStrip } from "./ProgressStrip";
 
 // Models write GitHub-flavored markdown (tables included) even when asked not to; render it instead of showing pipes.
 const GFM = [remarkGfm];
+const OrchestratorIcon = OWNER_ICON.orchestrator;
 
 export function TurnBlock({ turn, onRetry }: { turn: TurnView; onRetry: () => void }) {
   const [stepsOpen, setStepsOpen] = useState(true);
@@ -28,24 +31,34 @@ export function TurnBlock({ turn, onRetry }: { turn: TurnView; onRetry: () => vo
         {turn.plan ? <PlanLine turn={turn} /> : turn.status === "running" && <PlanningLine turn={turn} />}
         {(turn.agents.length > 0 || turn.steps.length > 0) && (
           <section className="steps-box">
-            <button className="link" aria-expanded={stepsOpen} onClick={() => setStepsOpen((open) => !open)}>
-              {stepsOpen ? "Hide" : "Show"} steps ({turn.steps.length} tool calls, {turn.llmCalls} LLM calls)
+            <button className="steps-toggle" aria-expanded={stepsOpen} onClick={() => setStepsOpen((open) => !open)}>
+              <ChevronRight size={16} className="chevron" aria-hidden="true" />
+              {stepsOpen ? "Hide" : "Show"} steps
+              <span className="muted">
+                {turn.steps.length} tool calls, {turn.llmCalls} LLM calls
+              </span>
             </button>
             {stepsOpen && <Steps turn={turn} />}
           </section>
         )}
         {failedCalls.map((call, index) => (
           <div key={`call-${index}`} className="notice warn">
-            {call.status === "rate_limited"
-              ? `${shortModel(call.model)} is rate limited${call.detail ? ` (${call.detail})` : ""}, so the next model takes over.`
-              : `${shortModel(call.model)} failed (${call.detail ?? call.status}), so the next model takes over.`}
+            {call.status === "rate_limited" ? <Gauge size={16} aria-hidden="true" /> : <RefreshCw size={16} aria-hidden="true" />}
+            <span>
+              {call.status === "rate_limited"
+                ? `${shortModel(call.model)} is rate limited${call.detail ? ` (${call.detail})` : ""}, so the next model takes over.`
+                : `${shortModel(call.model)} failed (${call.detail ?? call.status}), so the next model takes over.`}
+            </span>
           </div>
         ))}
         {turn.waits.map((wait, index) => (
           <div key={`wait-${index}`} className="notice warn">
-            {wait.reason === "local_limit"
-              ? `Waiting ${Math.ceil(wait.waitMs / 1000)} s for a free LLM slot (staying under the rate limit).`
-              : `All models are busy, so trying again in ${Math.ceil(wait.waitMs / 1000)} s.`}
+            <Hourglass size={16} aria-hidden="true" />
+            <span>
+              {wait.reason === "local_limit"
+                ? `Waiting ${Math.ceil(wait.waitMs / 1000)} s for a free LLM slot (staying under the rate limit).`
+                : `All models are busy, so trying again in ${Math.ceil(wait.waitMs / 1000)} s.`}
+            </span>
           </div>
         ))}
         {turn.cards.map((card, index) => (
@@ -66,32 +79,47 @@ export function TurnBlock({ turn, onRetry }: { turn: TurnView; onRetry: () => vo
 // Shown between the message and the plan, while the planner model is choosing the agents.
 function PlanningLine({ turn }: { turn: TurnView }) {
   return (
-    <div className="plan planning" role="status">
-      <span className="spinner" aria-hidden="true" /> <strong>Orchestrator</strong> is choosing which agents to run
+    <div className="plan planning tone-orchestrator" role="status">
+      <OrchestratorIcon size={16} className="tone-icon" aria-hidden="true" />
+      <strong>Orchestrator</strong> is choosing which agents to run
+      <LoaderCircle size={16} className="spin" aria-hidden="true" />
       {turn.startedAt !== null && (
-        <>
-          {" "}
-          <span className="muted"><Elapsed since={turn.startedAt} /></span>
-        </>
+        <span className="muted">
+          <Elapsed since={turn.startedAt} />
+        </span>
       )}
     </div>
+  );
+}
+
+function OwnerChip({ owner }: { owner: Owner }) {
+  const Icon = OWNER_ICON[owner];
+  return (
+    <span className={`chip owner-chip ${toneClass(owner)}`}>
+      <Icon size={14} aria-hidden="true" />
+      {ownerName(owner)}
+    </span>
   );
 }
 
 function PlanLine({ turn }: { turn: TurnView }) {
   const plan = turn.plan!;
   return (
-    <div className="plan">
-      <strong>Orchestrator:</strong>{" "}
+    <div className="plan tone-orchestrator">
+      <OrchestratorIcon size={16} className="tone-icon" aria-hidden="true" />
+      <strong>Orchestrator</strong>
       {plan.agents.length > 0 && (
         <>
-          running{" "}
+          <span>runs</span>
           {plan.agents.map((entry) => (
-            <span key={entry.agent} className="chip">{AGENT_NAMES[entry.agent]}</span>
-          ))}{" "}
+            <OwnerChip key={entry.agent} owner={entry.agent} />
+          ))}
         </>
       )}
-      <span className="muted">{plan.reason}</span> <span className="badge">Plan ready in {seconds(plan.ms)}</span>
+      <span className="plan-reason">{plan.reason}</span>
+      <span className="badge">
+        <Timer size={12} aria-hidden="true" /> Plan ready in {seconds(plan.ms)}
+      </span>
     </div>
   );
 }
@@ -101,29 +129,34 @@ function Steps({ turn }: { turn: TurnView }) {
   return (
     <div className="steps">
       <LlmLine turn={turn} who="planner" label="Plan" />
-      {turn.agents.map((agent) => (
-        <div key={agent.agent} className="group">
-          <div className="group-head">
-            <StatusIcon status={agent.status} />
-            <strong>{AGENT_NAMES[agent.agent]}</strong>
-            <AgentTime agent={agent} />
-          </div>
-          {agent.summary && (
-            <div className="muted agent-summary">
-              <Markdown remarkPlugins={GFM}>{cleanAnswer(agent.summary)}</Markdown>
+      {turn.agents.map((agent) => {
+        const Icon = OWNER_ICON[agent.agent];
+        return (
+          <div key={agent.agent} className={`group ${toneClass(agent.agent)}`}>
+            <div className="group-head">
+              <Icon size={16} className="tone-icon" aria-hidden="true" />
+              <strong>{AGENT_NAMES[agent.agent]}</strong>
+              <StatusIcon status={agent.status} size={15} />
+              <AgentTime agent={agent} />
             </div>
-          )}
-          {turn.steps.filter((step) => step.owner === agent.agent).map((step) => (
-            <StepRow key={step.callId} step={step} />
-          ))}
-          <LlmLine turn={turn} who={agent.agent} label="Model" />
-        </div>
-      ))}
+            {agent.summary && (
+              <div className="agent-summary">
+                <Markdown remarkPlugins={GFM}>{cleanAnswer(agent.summary)}</Markdown>
+              </div>
+            )}
+            {turn.steps.filter((step) => step.owner === agent.agent).map((step) => (
+              <StepRow key={step.callId} step={step} />
+            ))}
+            <LlmLine turn={turn} who={agent.agent} label="Model" />
+          </div>
+        );
+      })}
       {byCode.length > 0 && (
-        <div className="group">
+        <div className="group tone-orchestrator">
           <div className="group-head">
-            <StatusIcon status="ok" />
-            <strong>Orchestrator (code, no model)</strong>
+            <OrchestratorIcon size={16} className="tone-icon" aria-hidden="true" />
+            <strong>Orchestrator</strong>
+            <span className="muted">code, no model</span>
           </div>
           {byCode.map((step) => (
             <StepRow key={step.callId} step={step} />
@@ -150,13 +183,15 @@ function SourcesRow({ turn }: { turn: TurnView }) {
   if (turn.status === "running" || groups.length === 0) return null;
   return (
     <div className="sources">
-      <span className="muted">Sources</span>
+      <span className="sources-label">
+        <Link2 size={14} aria-hidden="true" /> Sources
+      </span>
       {groups.map((group) => {
         const title = group.details.join(", ") || undefined;
         return group.url ? (
-          <a key={group.provider} className="chip" href={group.url} target="_blank" rel="noreferrer" title={title}>{group.provider}</a>
+          <a key={group.provider} className="chip source" href={group.url} target="_blank" rel="noreferrer" title={title}>{group.provider}</a>
         ) : (
-          <span key={group.provider} className="chip" title={title}>{group.provider}</span>
+          <span key={group.provider} className="chip source" title={title}>{group.provider}</span>
         );
       })}
     </div>
@@ -167,7 +202,7 @@ function LlmLine({ turn, who, label }: { turn: TurnView; who: LlmCaller; label: 
   const calls = turn.llm.filter((call) => call.who === who);
   if (calls.length === 0) return null;
   return (
-    <div className="llm-line muted">
+    <div className="llm-line">
       {label}: {calls.map((call) => `${shortModel(call.model)} ${call.status} (${seconds(call.ms)})`).join(", ")}
     </div>
   );
@@ -178,11 +213,16 @@ function StepRow({ step }: { step: StepView }) {
   return (
     <div className={`step step-${step.status}`}>
       <button className="step-line" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
-        <StatusIcon status={step.status} />
+        <ChevronRight size={14} className="chevron" aria-hidden="true" />
+        <StatusIcon status={step.status} size={15} />
         <code>{step.tool}</code>
         <span className="step-summary">{step.summary || "running..."}</span>
-        {step.cached && <span className="badge muted">cached</span>}
-        {step.ms !== null && <span className="muted">{step.ms} ms</span>}
+        {step.cached && (
+          <span className="badge">
+            <Database size={11} aria-hidden="true" /> cached
+          </span>
+        )}
+        {step.ms !== null && <span className="muted step-ms">{step.ms} ms</span>}
       </button>
       {open && (
         <div className="step-details">
@@ -225,18 +265,25 @@ function Detail({ title, value }: { title: string; value: unknown }) {
   );
 }
 
-function StatusIcon({ status }: { status: string }) {
-  const symbol = status === "running" ? "..." : status === "ok" ? "✓" : status === "timeout" ? "⏱" : "!";
-  return <span className={`status status-${status}`} aria-label={status}>{symbol}</span>;
-}
-
 function Footer({ turn, onRetry }: { turn: TurnView; onRetry: () => void }) {
   if (turn.status === "running") return null;
-  if (turn.status === "done") return <div className="footer muted">Done in {seconds(turn.ms)}, {turn.llmCalls} LLM calls.</div>;
-  if (turn.status === "stopped") return <div className="footer muted">Stopped.</div>;
+  if (turn.status === "done") {
+    return (
+      <div className="footer">
+        <CircleCheck size={14} aria-hidden="true" /> Done in {seconds(turn.ms)}, {turn.llmCalls} LLM calls.
+      </div>
+    );
+  }
+  if (turn.status === "stopped") {
+    return (
+      <div className="footer">
+        <CircleStop size={14} aria-hidden="true" /> Stopped.
+      </div>
+    );
+  }
   return (
     <div className="footer error">
-      {turn.error ?? "Something went wrong."} <button onClick={onRetry}>Try again</button>
+      <CircleAlert size={14} aria-hidden="true" /> {turn.error ?? "Something went wrong."} <button onClick={onRetry}>Try again</button>
     </div>
   );
 }
