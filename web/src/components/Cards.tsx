@@ -28,7 +28,8 @@ function ComparisonCard({ card }: { card: CardOf<"comparison"> }) {
     <section className="card">
       <h3>Destinations compared</h3>
       <p className="muted">
-        {card.days} days, {card.nights} nights{card.rate ? `. ECB rate ${card.rate.value} (${card.rate.date})` : ""}. Weather is a climate average of past years, not a forecast.
+        {card.days} days, {card.nights} nights{card.rate ? `. ECB rate ${card.rate.value} (${card.rate.date})` : ""}.
+        {card.rows.some((row) => row.avgHighC !== null) && " Weather is a climate average of past years, not a forecast."}
       </p>
       <div className="table-wrap">
         <table>

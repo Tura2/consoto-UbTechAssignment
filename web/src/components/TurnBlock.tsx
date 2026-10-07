@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Markdown from "react-markdown";
 import type { LlmCaller } from "../../../shared/events";
+import { cleanAnswer } from "../../../shared/text";
 import { AGENT_NAMES, seconds, shortModel } from "../format";
 import type { StepView, TurnView } from "../state/turnReducer";
 import { CardView } from "./Cards";
@@ -28,7 +29,7 @@ export function TurnBlock({ turn, onRetry }: { turn: TurnView; onRetry: () => vo
         {failedCalls.map((call, index) => (
           <div key={`call-${index}`} className="notice warn">
             {call.status === "rate_limited"
-              ? `${shortModel(call.model)} is rate limited, so the next model takes over.`
+              ? `${shortModel(call.model)} is rate limited${call.detail ? ` (${call.detail})` : ""}, so the next model takes over.`
               : `${shortModel(call.model)} failed (${call.detail ?? call.status}), so the next model takes over.`}
           </div>
         ))}
@@ -44,7 +45,7 @@ export function TurnBlock({ turn, onRetry }: { turn: TurnView; onRetry: () => vo
         ))}
         {turn.answer && (
           <div className="bubble answer">
-            <Markdown>{turn.answer}</Markdown>
+            <Markdown>{cleanAnswer(turn.answer)}</Markdown>
           </div>
         )}
         {turn.status === "running" && !turn.answer && <div className="thinking">Working on it...</div>}
