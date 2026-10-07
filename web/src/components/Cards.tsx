@@ -247,7 +247,7 @@ function PolicyCard({ card }: { card: CardOf<"policy"> }) {
   return (
     <section className="card">
       <h3>Policy check for {card.city}</h3>
-      <p className={`verdict ${overall.tone}`}>{overall.text}</p>
+      <div className={`verdict-banner ${overall.tone}`} role="status">{overall.text}</div>
       <ol className="rules">
         {card.verdict.rules.map((rule) => (
           <li key={rule.id}>

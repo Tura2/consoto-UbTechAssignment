@@ -1,10 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Markdown from "react-markdown";
 import type { LlmCaller } from "../../../shared/events";
 import { cleanAnswer } from "../../../shared/text";
 import { AGENT_NAMES, seconds, shortModel } from "../format";
-import type { StepView, TurnView } from "../state/turnReducer";
+import { uniqueSources } from "../sources";
+import type { AgentView, StepView, TurnView } from "../state/turnReducer";
 import { CardView } from "./Cards";
+import { Elapsed } from "./Elapsed";
+import { ProgressStrip } from "./ProgressStrip";
 
 export function TurnBlock({ turn, onRetry }: { turn: TurnView; onRetry: () => void }) {
   const [stepsOpen, setStepsOpen] = useState(true);
@@ -17,10 +20,11 @@ export function TurnBlock({ turn, onRetry }: { turn: TurnView; onRetry: () => vo
     <article className="turn">
       <div className="bubble user">{turn.userMessage}</div>
       <div className="assistant">
-        {turn.plan && <PlanLine turn={turn} />}
+        {(turn.plan || turn.status === "running") && <ProgressStrip turn={turn} />}
+        {turn.plan ? <PlanLine turn={turn} /> : turn.status === "running" && <PlanningLine turn={turn} />}
         {(turn.agents.length > 0 || turn.steps.length > 0) && (
           <section className="steps-box">
-            <button className="link" onClick={() => setStepsOpen((open) => !open)}>
+            <button className="link" aria-expanded={stepsOpen} onClick={() => setStepsOpen((open) => !open)}>
               {stepsOpen ? "Hide" : "Show"} steps ({turn.steps.length} tool calls, {turn.llmCalls} LLM calls)
             </button>
             {stepsOpen && <Steps turn={turn} />}
@@ -48,10 +52,25 @@ export function TurnBlock({ turn, onRetry }: { turn: TurnView; onRetry: () => vo
             <Markdown>{cleanAnswer(turn.answer)}</Markdown>
           </div>
         )}
-        {turn.status === "running" && !turn.answer && <div className="thinking">Working on it...</div>}
+        <SourcesRow turn={turn} />
         <Footer turn={turn} onRetry={onRetry} />
       </div>
     </article>
+  );
+}
+
+// Shown between the message and the plan, while the planner model is choosing the agents.
+function PlanningLine({ turn }: { turn: TurnView }) {
+  return (
+    <div className="plan planning" role="status">
+      <span className="spinner" aria-hidden="true" /> <strong>Orchestrator</strong> is choosing which agents to run
+      {turn.startedAt !== null && (
+        <>
+          {" "}
+          <span className="muted"><Elapsed since={turn.startedAt} /></span>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -68,7 +87,7 @@ function PlanLine({ turn }: { turn: TurnView }) {
           ))}{" "}
         </>
       )}
-      <span className="muted">{plan.reason}</span>
+      <span className="muted">{plan.reason}</span> <span className="badge">Plan ready in {seconds(plan.ms)}</span>
     </div>
   );
 }
@@ -83,6 +102,7 @@ function Steps({ turn }: { turn: TurnView }) {
           <div className="group-head">
             <StatusIcon status={agent.status} />
             <strong>{AGENT_NAMES[agent.agent]}</strong>
+            <AgentTime agent={agent} />
           </div>
           {agent.summary && (
             <div className="muted agent-summary">
@@ -111,6 +131,33 @@ function Steps({ turn }: { turn: TurnView }) {
   );
 }
 
+function AgentTime({ agent }: { agent: AgentView }) {
+  if (agent.status === "running") {
+    return <span className="muted">running{agent.startedAt !== null && <> <Elapsed since={agent.startedAt} /></>}</span>;
+  }
+  const time = agent.ms === null ? "" : ` after ${seconds(agent.ms)}`;
+  const text = { ok: `done in ${seconds(agent.ms)}`, error: `failed${time}`, timeout: `timed out${time}` }[agent.status];
+  return <span className="muted">{text}</span>;
+}
+
+// The data sources behind this turn's answer, from the tool calls that succeeded.
+function SourcesRow({ turn }: { turn: TurnView }) {
+  const sources = useMemo(() => uniqueSources(turn.steps), [turn.steps]);
+  if (turn.status === "running" || sources.length === 0) return null;
+  return (
+    <div className="sources">
+      <span className="muted">Sources</span>
+      {sources.map((source) =>
+        source.url.startsWith("http") ? (
+          <a key={source.name} className="chip" href={source.url} target="_blank" rel="noreferrer">{source.name}</a>
+        ) : (
+          <span key={source.name} className="chip">{source.name}</span>
+        ),
+      )}
+    </div>
+  );
+}
+
 function LlmLine({ turn, who, label }: { turn: TurnView; who: LlmCaller; label: string }) {
   const calls = turn.llm.filter((call) => call.who === who);
   if (calls.length === 0) return null;
@@ -125,7 +172,7 @@ function StepRow({ step }: { step: StepView }) {
   const [open, setOpen] = useState(false);
   return (
     <div className={`step step-${step.status}`}>
-      <button className="step-line" onClick={() => setOpen((value) => !value)}>
+      <button className="step-line" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
         <StatusIcon status={step.status} />
         <code>{step.tool}</code>
         <span className="step-summary">{step.summary || "running..."}</span>
