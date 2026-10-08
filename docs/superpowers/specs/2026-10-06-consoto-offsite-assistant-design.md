@@ -233,6 +233,9 @@ type Conversation = {
    still runs. A missing `searchPeriod` needs no retry: free models sometimes
    drop it even when asked twice, so code reads the month and its part from the
    user's words (`periodFromMessage`, used only while the trip has no dates).
+   In the same way, a plan that sets no city takes the one city with cost data
+   that the message names (`fillCity`): free models missed "What about Prague
+   instead?" in 2 of 4 eval runs.
 2. **Update the trip (code).** Resolve `searchPeriod` to ISO dates (16th to the
    last day for `second_half`) and its year; resolve `startDay` to an ISO date
    inside the search window (or the next occurrence of that date if there is no

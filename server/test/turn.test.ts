@@ -125,6 +125,20 @@ describe("runTurn", () => {
     expect(turn.answer).not.toContain("Which European cities");
   });
 
+  it("switches the city when the plan misses it", async () => {
+    // Seen live in 2 of 4 eval runs: the planner routed the cost question but left tripUpdate empty.
+    const missed = { tripUpdate: {}, agents: [{ agent: "budget_policy", task: "Cost of Prague in shekels." }], reason: "Cost question." };
+    const { llm } = scriptedLlm({
+      planner: [toolCall("submit_plan", missed)],
+      budget_policy: [toolCall("budget_estimate_cost", { cities: ["Prague"], days: 3, team: "platform" }), text("Prague is 2,297 ILS per person.")],
+    });
+    const { conversation, events } = await turnWith(llm, "What about Prague instead? What would it cost in shekels?", (c) => {
+      c.trip = BASE_TRIP;
+    });
+    expect(conversation.trip.city).toBe("Prague");
+    expect(cardsOf(events).find((card) => card.kind === "cost")).toMatchObject({ estimate: { city: "Prague" } });
+  });
+
   it("reports an Overpass outage instead of inventing venues", async () => {
     const { llm, requests } = scriptedLlm({
       planner: [toolCall("submit_plan", { tripUpdate: {}, agents: [{ agent: "venues", task: "Food in Lisbon." }], reason: "Food question." })],

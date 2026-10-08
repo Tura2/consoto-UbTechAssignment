@@ -1,7 +1,7 @@
 // Trip facts owned by code. The planner says what changed; this module turns it into facts.
 import { z } from "zod";
 import type { Trip } from "../../../shared/domain";
-import { citiesInRegion, getPolicy, matchCity, normalizeTeamId } from "../data/consoto-data";
+import { citiesInRegion, getPolicy, listCities, matchCity, normalizeTeamId } from "../data/consoto-data";
 import { resolveSearchPeriod, resolveStartDay } from "../domain/dates";
 import type { Conversation, RememberedAgent } from "../state/conversations";
 
@@ -91,6 +91,16 @@ export function fillPeriod(update: TripUpdate, message: string, trip: Trip): Tri
   if (update.searchPeriod || trip.searchWindow) return update;
   const period = periodFromMessage(message);
   return period ? { ...update, searchPeriod: period } : update;
+}
+
+// Free models also miss a switch like "What about Prague instead?" (seen live in 2 of 4 runs), and the comparison of
+// every city would run again. When the plan sets no city and the message names exactly one city with cost data,
+// code takes that city.
+export function fillCity(update: TripUpdate, message: string): TripUpdate {
+  if (update.city) return update;
+  const text = message.toLowerCase();
+  const named = listCities().filter((city) => new RegExp(`\\b${city.toLowerCase()}\\b`).test(text));
+  return named.length === 1 ? { ...update, city: named[0] } : update;
 }
 
 export function focusCities(trip: Trip): string[] {

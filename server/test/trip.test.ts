@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AgentResult } from "../src/agents/runner";
-import { applyTripUpdate, depsKey, dropStaleFindings, fillPeriod, namedCandidates, newTrip, periodFromMessage } from "../src/orchestrator/trip";
+import { applyTripUpdate, depsKey, dropStaleFindings, fillCity, fillPeriod, namedCandidates, newTrip, periodFromMessage } from "../src/orchestrator/trip";
 import { createStore, historyMessages } from "../src/state/conversations";
 
 const TODAY = "2026-10-06";
@@ -142,5 +142,18 @@ describe("fillPeriod", () => {
     expect(fillPeriod(planned, "second half of March", empty)).toEqual(planned);
     const dated = applyTripUpdate(empty, { searchPeriod: { month: 3, part: "second_half" } }, TODAY);
     expect(fillPeriod({}, "what about April?", dated)).toEqual({});
+  });
+});
+
+describe("fillCity", () => {
+  it("takes the one city with cost data that the message names, when the plan sets none", () => {
+    expect(fillCity({ days: 3 }, "What about Prague instead?")).toEqual({ days: 3, city: "Prague" });
+  });
+
+  it("keeps the plan's city, and skips messages with no city, two cities or a city without cost data", () => {
+    expect(fillCity({ city: "Lisbon" }, "What about Prague instead?")).toEqual({ city: "Lisbon" });
+    expect(fillCity({}, "Ok, let's go with it.")).toEqual({});
+    expect(fillCity({}, "Is Prague cheaper than Lisbon?")).toEqual({});
+    expect(fillCity({}, "What about Rome?")).toEqual({});
   });
 });
