@@ -9,7 +9,7 @@ import { createStore } from "../src/state/conversations";
 import { fakeData } from "./helpers/fake-data";
 import { toolCall } from "./helpers/fake-llm";
 
-const HEALTH: HealthInfo = { keyValid: true, freeRequestsLeft: 974, freeRequestsLimit: 1000, isFreeTier: false, models: [], checkedAt: "2026-10-06T08:00:00.000Z" };
+const HEALTH: HealthInfo = { keyValid: true, freeRequestsLeft: 974, freeRequestsLimit: 1000, isFreeTier: false, models: [] };
 
 // Replies to every planner call with a greeting plan; the first call can be made to hang until aborted.
 function greetingLlm(hangFirstCall = false): Llm {
@@ -20,11 +20,11 @@ function greetingLlm(hangFirstCall = false): Llm {
       if (hangFirstCall && calls === 1) {
         return new Promise((_, reject) => request.signal.addEventListener("abort", () => reject(request.signal.reason)));
       }
-      return Promise.resolve({ message: toolCall("submit_plan", { tripUpdate: {}, agents: [], reason: "Greeting." }), model: "fake" });
+      return Promise.resolve(toolCall("submit_plan", { tripUpdate: {}, agents: [], reason: "Greeting." }));
     },
     async stream(_request, _emit, onText) {
       onText("Hi Maya.");
-      return { text: "Hi Maya.", model: "fake" };
+      return "Hi Maya.";
     },
   };
 }

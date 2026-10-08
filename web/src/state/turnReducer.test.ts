@@ -7,10 +7,10 @@ const replay = (events: StreamEvent[], now: number) => events.reduce((turn, even
 
 const EVENTS: StreamEvent[] = [
   { type: "turn_start", conversationId: "c1", turnId: "t1" },
-  { type: "plan", agents: [{ agent: "venues", task: "Food" }], reason: "Food question.", trip: TRIP, clarify: null, ms: 12000 },
-  { type: "agent_start", agent: "venues", task: "Food" },
-  { type: "llm_call", who: "venues", model: "m1", attempt: 1, status: "rate_limited", ms: 5, detail: "429", tokens: null },
-  { type: "llm_call", who: "venues", model: "m2", attempt: 2, status: "ok", ms: 900, detail: null, tokens: null },
+  { type: "plan", agents: [{ agent: "venues", task: "Food" }], reason: "Food question.", trip: TRIP, ms: 12000 },
+  { type: "agent_start", agent: "venues" },
+  { type: "llm_call", who: "venues", model: "m1", status: "rate_limited", ms: 5, detail: "429" },
+  { type: "llm_call", who: "venues", model: "m2", status: "ok", ms: 900, detail: null },
   { type: "tool_start", callId: "x", owner: "venues", tool: "places_find_for_team", input: { city: "Lisbon" } },
   { type: "tool_end", callId: "x", ok: true, summary: "5 places", data: {}, sources: [], gaps: ["No kosher"], cached: true, ms: 40 },
   { type: "agent_end", agent: "venues", status: "ok", summary: "Found places.", ms: 700 },
@@ -23,8 +23,8 @@ describe("turnReducer", () => {
   it("builds the turn view from the event stream", () => {
     const turn = replay(EVENTS, 1000);
     expect(turn.id).toBe("t1");
-    expect(turn.plan).toMatchObject({ reason: "Food question.", ms: 12000, trip: TRIP });
-    expect(turn.agents).toEqual([{ agent: "venues", task: "Food", status: "ok", summary: "Found places.", startedAt: 1000, ms: 700 }]);
+    expect(turn.plan).toEqual({ agents: ["venues"], reason: "Food question.", ms: 12000, trip: TRIP });
+    expect(turn.agents).toEqual([{ agent: "venues", status: "ok", summary: "Found places.", startedAt: 1000, ms: 700 }]);
     expect(turn.steps[0]).toMatchObject({ status: "ok", summary: "5 places", gaps: ["No kosher"], cached: true, ms: 40 });
     expect(turn.llm.map((c) => c.status)).toEqual(["rate_limited", "ok"]);
     expect(turn.answer).toBe("Here you go.");

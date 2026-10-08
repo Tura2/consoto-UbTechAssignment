@@ -1,16 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type { PolicyVerdict, Trip } from "../../shared/domain";
+import type { PolicyVerdict } from "../../shared/domain";
 import { checkItinerary } from "../src/domain/itinerary-check";
 import { allPlaces } from "../src/domain/places";
 import { itinerarySubmitPlan, type ItineraryData } from "../src/tools/itinerary-submit-plan";
 import { placesFindForTeam } from "../src/tools/places-find-for-team";
 import { policyCheck } from "../src/tools/policy-check";
 import { runTool, type ToolContext } from "../src/tools/types";
-import { BASE_TRIP, makeCtx } from "./helpers/ctx";
+import { BASE_TRIP, LISBON_TRIP, makeCtx } from "./helpers/ctx";
 import { fakeData } from "./helpers/fake-data";
 import { GOOD_PLAN, LISBON_NEEDS, lisbonVenues } from "./helpers/lisbon";
-
-const LISBON_TRIP: Trip = { ...BASE_TRIP, city: "Lisbon", start: { date: "2027-03-16", source: "assumed" } };
 
 function planningCtx(overrides: Partial<ToolContext> = {}): ToolContext {
   return makeCtx({ trip: LISBON_TRIP, findings: { venues: lisbonVenues(), itinerary: null }, ...overrides });

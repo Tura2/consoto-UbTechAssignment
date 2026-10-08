@@ -26,7 +26,6 @@ const TRIP: Trip = {
 const ITINERARY: ItineraryCheck = {
   accepted: true,
   problems: [],
-  notes: [],
   uncoveredMeals: [],
   mealsCoveredByCatering: ["Day 1 lunch: kosher catering"],
   inaccessible: [],

@@ -28,10 +28,10 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import type { DietNeed, ItinerarySlot, PolicyVerdict, RuleStatus } from "../../../shared/domain";
-import type { Card } from "../../../shared/events";
+import type { Card, StepOwner } from "../../../shared/events";
 import { calendarDays } from "../calendar";
 import { DIET_NAMES, eur, ils, pct, range, shortDate } from "../format";
-import { OwnerTag, toneClass, type Owner } from "./icons";
+import { OwnerTag, toneClass } from "./icons";
 
 type CardOf<K extends Card["kind"]> = Extract<Card, { kind: K }>;
 
@@ -55,7 +55,7 @@ export function CardView({ card }: { card: Card }) {
 }
 
 // Every card names the agents whose tool results it shows; the top border takes the first one's colour.
-function CardShell(props: { icon: LucideIcon; title: string; owners: Owner[]; note?: ReactNode; children: ReactNode }) {
+function CardShell(props: { icon: LucideIcon; title: string; owners: StepOwner[]; note?: ReactNode; children: ReactNode }) {
   const Icon = props.icon;
   return (
     <section className={`card ${toneClass(props.owners[0])}`}>
@@ -119,7 +119,7 @@ function ComparisonCard({ card }: { card: CardOf<"comparison"> }) {
           </tbody>
         </table>
       </div>
-      <p className="card-foot">Highlighted: the lowest cost per person and the most clean 3-day windows.</p>
+      <p className="card-foot">Highlighted: the lowest cost per person and the most clean {card.days}-day windows.</p>
     </CardShell>
   );
 }
@@ -266,7 +266,7 @@ function WeatherCard({ card }: { card: CardOf<"weather"> }) {
         <Stat icon={CloudRain} label="Days with rain" value={pct(stats.rainyDayShare)} />
         <Stat icon={Droplets} label="Rain per day" value={`${stats.avgRainMm} mm`} />
       </div>
-      <p className="notice info">
+      <p className="notice">
         <Info size={16} aria-hidden="true" />
         <span>
           Climate average of {stats.years[0]}-{stats.years[stats.years.length - 1]}, not a forecast. {outlook.reason}
@@ -303,7 +303,7 @@ function VenuesCard({ card }: { card: CardOf<"venues"> }) {
       <ul className="places">
         {result.bestFood.map((place) => (
           <li key={place.id}>
-            <Accessibility size={15} className={`wheelchair wheelchair-${place.wheelchair}`} aria-label={WHEELCHAIR_TEXT[place.wheelchair]} role="img" />
+            <Accessibility size={15} className={`wheelchair-${place.wheelchair}`} aria-label={WHEELCHAIR_TEXT[place.wheelchair]} role="img" />
             <a href={place.osmUrl} target="_blank" rel="noreferrer">{place.name}</a>
             <span className="muted">
               {place.diets.map((diet) => DIET_NAMES[diet]).join(", ") || "no diet tags"}, {WHEELCHAIR_TEXT[place.wheelchair]}
@@ -315,7 +315,7 @@ function VenuesCard({ card }: { card: CardOf<"venues"> }) {
       <ul className="places">
         {result.sights.map((place) => (
           <li key={place.id}>
-            <Accessibility size={15} className="wheelchair wheelchair-yes" aria-hidden="true" />
+            <Accessibility size={15} className="wheelchair-yes" aria-hidden="true" />
             <a href={place.osmUrl} target="_blank" rel="noreferrer">{place.name}</a>
           </li>
         ))}
@@ -375,12 +375,12 @@ function ItineraryCard({ card }: { card: CardOf<"itinerary"> }) {
           </div>
         </div>
       )}
-      {card.check.notes.length > 0 && (
+      {card.check.accessToConfirm.length > 0 && (
         <div className="notice warn">
           <TriangleAlert size={16} aria-hidden="true" />
           <div>
             <strong>To confirm</strong>
-            <ul>{card.check.notes.map((note) => <li key={note}>{note}</li>)}</ul>
+            <ul>{card.check.accessToConfirm.map((name) => <li key={name}>Confirm step-free access at {name}.</li>)}</ul>
           </div>
         </div>
       )}

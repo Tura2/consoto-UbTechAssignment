@@ -12,15 +12,15 @@ export function scriptedLlm(script: Partial<Record<LlmCaller, AssistantMessage[]
       requests.push({ who: request.who, messages: request.messages });
       const next = queues.get(request.who)?.shift();
       if (!next) throw new Error(`No scripted reply for ${request.who}`);
-      emit({ type: "llm_call", who: request.who, model: "fake/model", attempt: 1, status: "ok", ms: 1, detail: null, tokens: null });
-      return { message: next, model: "fake/model" };
+      emit({ type: "llm_call", who: request.who, model: "fake/model", status: "ok", ms: 1, detail: null });
+      return next;
     },
     async stream(request, emit, onText) {
       calls.push(request.who);
       requests.push({ who: request.who, messages: request.messages });
-      emit({ type: "llm_call", who: request.who, model: "fake/model", attempt: 1, status: "ok", ms: 1, detail: null, tokens: null });
+      emit({ type: "llm_call", who: request.who, model: "fake/model", status: "ok", ms: 1, detail: null });
       onText(answerText);
-      return { text: answerText, model: "fake/model" };
+      return answerText;
     },
   };
   return { llm, calls, requests };

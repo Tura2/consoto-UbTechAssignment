@@ -9,7 +9,8 @@ const DIET_TAGS: Record<DietNeed, string> = {
 
 export const DIET_LABELS: Record<DietNeed, string> = { vegan: "vegan", kosher: "kosher", gluten_free: "gluten-free" };
 
-const DIET_ORDER: DietNeed[] = ["vegan", "kosher", "gluten_free"];
+// Every dietary need, in the order the app lists them.
+export const DIETS: DietNeed[] = ["vegan", "kosher", "gluten_free"];
 const WHEELCHAIR_RANK: Record<Wheelchair, number> = { yes: 0, limited: 1, unknown: 2, no: 3 };
 
 export function buildPlacesQuery(point: { lat: number; lon: number }, radiusM: number, needs: DietNeed[]): string {
@@ -30,32 +31,20 @@ export function readWheelchair(value: string | undefined): Wheelchair {
   return value === "yes" || value === "limited" || value === "no" ? value : "unknown";
 }
 
-type RawElement = {
-  type: string;
-  id: number;
-  lat?: number;
-  lon?: number;
-  center?: { lat: number; lon: number };
-  tags?: Record<string, string>;
-};
+type RawElement = { type: string; id: number; tags?: Record<string, string> };
 
 export function toPlace(raw: unknown): Place | null {
   const element = raw as RawElement;
   const tags = element.tags ?? {};
-  const lat = element.lat ?? element.center?.lat;
-  const lon = element.lon ?? element.center?.lon;
   const kind = tags.amenity === "restaurant" || tags.amenity === "cafe" ? "food" : tags.tourism ? "sight" : null;
-  if (!tags.name || lat === undefined || lon === undefined || !kind) return null;
+  if (!tags.name || !kind) return null;
   return {
     id: `${element.type}/${element.id}`,
     name: tags.name,
     kind,
-    diets: DIET_ORDER.filter((need) => ["yes", "only"].includes(tags[DIET_TAGS[need]] ?? "")),
+    diets: DIETS.filter((need) => ["yes", "only"].includes(tags[DIET_TAGS[need]] ?? "")),
     wheelchair: readWheelchair(tags.wheelchair),
-    lat,
-    lon,
     osmUrl: `https://www.openstreetmap.org/${element.type}/${element.id}`,
-    cuisine: tags.cuisine ?? null,
   };
 }
 

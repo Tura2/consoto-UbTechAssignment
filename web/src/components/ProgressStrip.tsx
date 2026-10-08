@@ -1,15 +1,16 @@
+import type { StepOwner } from "../../../shared/events";
 import { AGENT_NAMES, seconds } from "../format";
 import { progressSteps, type ProgressState, type ProgressStep } from "../progress";
 import type { TurnView } from "../state/turnReducer";
 import { Elapsed } from "./Elapsed";
-import { StatusIcon, toneClass, type Owner, type Status } from "./icons";
+import { StatusIcon, toneClass, type Status } from "./icons";
 
 const STATE_STATUS: Record<ProgressState, Status> = { waiting: "waiting", running: "running", done: "ok", failed: "error" };
 
 // The plan and the policy check are the orchestrator's; each agent step is the agent's; the answer is nobody's.
-function ownerOf(key: string): Owner | null {
+function ownerOf(key: string): StepOwner | null {
   if (key === "plan" || key === "policy") return "orchestrator";
-  return key in AGENT_NAMES ? (key as Owner) : null;
+  return key in AGENT_NAMES ? (key as StepOwner) : null;
 }
 
 function StepTime({ step }: { step: ProgressStep }) {

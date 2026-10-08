@@ -1,7 +1,7 @@
 // Every external data source the tools use, behind one interface so tests can swap in fakes.
-import type { ForecastDay, HolidayItem, Source } from "../../../shared/domain";
+import type { ForecastDay, HolidayItem, Rate, Source } from "../../../shared/domain";
 import type { DailySeries } from "../domain/climate";
-import { fetchEcbRate, type Rate } from "./frankfurter";
+import { fetchEcbRate } from "./frankfurter";
 import { fetchIsraelHolidays } from "./hebcal";
 import type { Http } from "./http";
 import { fetchCountryHolidays, type CountryRef } from "./nager";

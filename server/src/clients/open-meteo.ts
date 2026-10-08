@@ -2,12 +2,10 @@
 import { z } from "zod";
 import type { ForecastDay, Source } from "../../../shared/domain";
 import type { DailySeries } from "../domain/climate";
+import { DAY_MS, HOUR_MS } from "../lib/time";
 import type { Http } from "./http";
 
 export type Point = { lat: number; lon: number };
-
-const DAY = 86_400_000;
-const HOUR = 3_600_000;
 
 const GeocodeBody = z.object({
   results: z
@@ -31,7 +29,7 @@ export async function geocodeCity(
 ): Promise<Point & { source: Source }> {
   const country = countryCode ? `&countryCode=${countryCode}` : "";
   const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=5&language=en&format=json${country}`;
-  const result = await http.getJson({ name: "Open-Meteo (geocoding)", url, ttlMs: 365 * DAY, timeoutMs: 8_000, signal });
+  const result = await http.getJson({ name: "Open-Meteo (geocoding)", url, ttlMs: 365 * DAY_MS, timeoutMs: 8_000, signal });
   const point = parseGeocode(result.body, countryCode);
   if (!point) throw new Error(`Open-Meteo geocoding found no "${city}"${countryCode ? ` in ${countryCode}` : ""}`);
   return { ...point, source: result.source };
@@ -67,7 +65,7 @@ export async function fetchForecast(
     `https://api.open-meteo.com/v1/forecast?latitude=${point.lat}&longitude=${point.lon}` +
     `&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto` +
     `&start_date=${from}&end_date=${to}`;
-  const result = await http.getJson({ name: "Open-Meteo (forecast)", url, ttlMs: HOUR, timeoutMs: 8_000, signal });
+  const result = await http.getJson({ name: "Open-Meteo (forecast)", url, ttlMs: HOUR_MS, timeoutMs: 8_000, signal });
   return { days: parseForecast(result.body), source: result.source };
 }
 
@@ -107,6 +105,6 @@ export async function fetchArchive(
     `https://archive-api.open-meteo.com/v1/archive?latitude=${latitudes}&longitude=${longitudes}` +
     `&start_date=${from}&end_date=${to}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto`;
   // Past weather never changes, so the cache can keep it for a year.
-  const result = await http.getJson({ name: "Open-Meteo (historical weather)", url, ttlMs: 365 * DAY, timeoutMs: 15_000, signal });
+  const result = await http.getJson({ name: "Open-Meteo (historical weather)", url, ttlMs: 365 * DAY_MS, timeoutMs: 15_000, signal });
   return { series: parseArchive(result.body), source: result.source };
 }

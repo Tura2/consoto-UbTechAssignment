@@ -20,7 +20,6 @@ describe("checkItinerary", () => {
       "Day 3 lunch: kosher catering",
     ]);
     expect(check.accessToConfirm).toEqual(["Olha que Dois"]);
-    expect(check.notes).toEqual(["Confirm step-free access at Olha que Dois."]);
   });
 
   it("rejects unknown venues, uncovered meals, inaccessible places and wrong dates", () => {
@@ -53,7 +52,6 @@ describe("checkItinerary", () => {
     };
     const check = checkItinerary(plan, TRIP, places, NEEDS);
     expect(check.accessToConfirm).toContain("Walk by the river");
-    expect(check.notes).toContain("Confirm step-free access at Walk by the river.");
   });
 
   it("names the slot when an activity without a venue has no note", () => {

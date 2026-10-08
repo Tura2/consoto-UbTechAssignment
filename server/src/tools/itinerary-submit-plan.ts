@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { ItineraryCheck, ItineraryPlan } from "../../../shared/domain";
 import { getTeam, teamNeeds } from "../data/consoto-data";
 import { checkItinerary } from "../domain/itinerary-check";
-import { allPlaces } from "../domain/places";
+import { DIETS, allPlaces } from "../domain/places";
 import { IsoDate, defineTool, fail, ok } from "./types";
 
 export type ItineraryData = { plan: ItineraryPlan; check: ItineraryCheck; placeNames: Record<string, string> };
@@ -13,7 +13,7 @@ const ItemSchema = z.object({
   slot: z.enum(["morning", "lunch", "afternoon", "dinner"]),
   kind: z.enum(["activity", "meal"]),
   venueIds: z.array(z.string()).default([]).describe('Venue ids from the venues list, for example ["node/6124516487"]'),
-  catering: z.array(z.enum(["vegan", "kosher", "gluten_free"])).default([]).describe("Diets covered by booked catering"),
+  catering: z.array(z.enum(DIETS)).default([]).describe("Diets covered by booked catering"),
   note: z.string().default("").describe("Short description, for example the activity"),
 });
 

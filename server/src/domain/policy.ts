@@ -1,5 +1,5 @@
 // Consoto's six offsite rules as code. Every status and fix is computed here, never by the model.
-import type { CityCost, DateWindow, ItineraryCheck, PolicyRuleResult, PolicyVerdict, Trip } from "../../../shared/domain";
+import type { CityCost, DateWindow, ItineraryCheck, PolicyRuleResult, PolicyVerdict, Rate, Trip } from "../../../shared/domain";
 import { fmt } from "./format";
 
 export type PolicyParams = {
@@ -18,7 +18,7 @@ export type PolicyInput = {
   alternatives: CityCost[];
   dates: { window: DateWindow; nearestClean: DateWindow[] } | null;
   itinerary: ItineraryCheck | null;
-  rate: { value: number; date: string } | null;
+  rate: Rate | null;
 };
 
 type Outcome = Omit<PolicyRuleResult, "id" | "rule">;

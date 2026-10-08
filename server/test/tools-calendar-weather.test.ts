@@ -2,10 +2,8 @@ import { describe, expect, it } from "vitest";
 import { calendarFindCleanWindows, type CalendarData } from "../src/tools/calendar-find-clean-windows";
 import { runTool } from "../src/tools/types";
 import { weatherGetOutlook, type WeatherData } from "../src/tools/weather-get-outlook";
-import { makeCtx } from "./helpers/ctx";
+import { MARCH, makeCtx } from "./helpers/ctx";
 import { fakeData } from "./helpers/fake-data";
-
-const MARCH = { from: "2027-03-16", to: "2027-03-31" };
 
 describe("calendar_find_clean_windows", () => {
   it("finds Lisbon's clean windows from both holiday sources", async () => {

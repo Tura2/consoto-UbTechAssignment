@@ -1,8 +1,9 @@
 import { z } from "zod";
 import type { Place, VenuesResult } from "../../../shared/domain";
-import { getDestination, getTeam, listTeams, teamNeeds } from "../data/consoto-data";
+import { getDestination, getTeam, teamNeeds } from "../data/consoto-data";
 import { DIET_LABELS, buildPlacesQuery, summarizeVenues, toPlace } from "../domain/places";
-import { defineTool, fail, ok } from "./types";
+import { unknownTeam } from "./helpers";
+import { defineTool, ok } from "./types";
 
 const RADIUS_M = 3000;
 
@@ -18,9 +19,7 @@ export const placesFindForTeam = defineTool({
   }),
   async execute({ city, team }, ctx) {
     const found = getTeam(team);
-    if (!found) {
-      return fail("unknown_team", `No team data for "${team}".`, `Known teams: ${listTeams().join(", ")}. Tell the user there is no data for this team.`);
-    }
+    if (!found) return unknownTeam(team);
     const destination = getDestination(city);
     const name = destination?.city ?? city;
     const point = await ctx.data.geocode(name, destination?.countryCode ?? null, ctx.signal);

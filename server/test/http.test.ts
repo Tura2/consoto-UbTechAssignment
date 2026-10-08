@@ -73,13 +73,12 @@ describe("createHttp", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
-  it("serves the expired cache entry as stale when the API fails", async () => {
+  it("serves the expired cache entry, labeled as cached, when the API fails", async () => {
     const { http, advance } = setup([() => json({ a: 1 }), () => json({}, 503), () => json({}, 503), () => json({}, 503)]);
     await http.getJson(spec);
     advance(60_001);
     const result = await http.getJson(spec);
-    expect(result).toMatchObject({ body: { a: 1 }, stale: true });
-    expect(result.source.cached).toBe(true);
+    expect(result).toMatchObject({ body: { a: 1 }, source: { cached: true } });
   });
 
   it("shares one fetch between identical requests in flight", async () => {

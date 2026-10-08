@@ -1,8 +1,6 @@
 // Applies stream events to one turn's view. Pure, so it is easy to test and the UI never blocks on it.
 import type { AgentId, Source, Trip } from "../../../shared/domain";
-import type { Card, LlmCaller, StepOwner, StreamEvent } from "../../../shared/events";
-
-export type TurnStatus = "running" | "done" | "stopped" | "error";
+import type { Card, LlmCaller, StepOwner, StreamEvent, TurnStatus } from "../../../shared/events";
 
 export type StepView = {
   callId: string;
@@ -21,21 +19,20 @@ export type StepView = {
 // startedAt is the browser clock when the agent started. It is null for a reloaded turn, which has no live timing.
 export type AgentView = {
   agent: AgentId;
-  task: string;
   status: "running" | "ok" | "error" | "timeout";
   summary: string;
   startedAt: number | null;
   ms: number | null;
 };
-export type LlmView = { who: LlmCaller; model: string; attempt: number; status: "ok" | "rate_limited" | "error" | "empty"; ms: number; detail: string | null };
-export type WaitView = { who: LlmCaller; waitMs: number; reason: "local_limit" | "retry_after" };
+export type LlmView = { who: LlmCaller; model: string; status: "ok" | "rate_limited" | "error" | "empty"; ms: number; detail: string | null };
+export type WaitView = { waitMs: number; reason: "local_limit" | "retry_after" };
 
 export type TurnView = {
   id: string;
   userMessage: string;
   status: TurnStatus;
   startedAt: number | null;
-  plan: { agents: { agent: AgentId; task: string }[]; reason: string; clarify: string | null; trip: Trip; ms: number } | null;
+  plan: { agents: AgentId[]; reason: string; trip: Trip; ms: number } | null;
   agents: AgentView[];
   steps: StepView[];
   llm: LlmView[];
@@ -57,9 +54,9 @@ export function applyEvent(turn: TurnView, event: StreamEvent, now: number | nul
     case "turn_start":
       return { ...turn, id: event.turnId };
     case "plan":
-      return { ...turn, plan: { agents: event.agents, reason: event.reason, clarify: event.clarify, trip: event.trip, ms: event.ms } };
+      return { ...turn, plan: { agents: event.agents.map((entry) => entry.agent), reason: event.reason, trip: event.trip, ms: event.ms } };
     case "agent_start":
-      return { ...turn, agents: [...turn.agents, { agent: event.agent, task: event.task, status: "running", summary: "", startedAt: now, ms: null }] };
+      return { ...turn, agents: [...turn.agents, { agent: event.agent, status: "running", summary: "", startedAt: now, ms: null }] };
     case "agent_end":
       return {
         ...turn,
@@ -86,10 +83,10 @@ export function applyEvent(turn: TurnView, event: StreamEvent, now: number | nul
       return {
         ...turn,
         llmCalls: turn.llmCalls + 1,
-        llm: [...turn.llm, { who: event.who, model: event.model, attempt: event.attempt, status: event.status, ms: event.ms, detail: event.detail }],
+        llm: [...turn.llm, { who: event.who, model: event.model, status: event.status, ms: event.ms, detail: event.detail }],
       };
     case "llm_wait":
-      return { ...turn, waits: [...turn.waits, { who: event.who, waitMs: event.waitMs, reason: event.reason }] };
+      return { ...turn, waits: [...turn.waits, { waitMs: event.waitMs, reason: event.reason }] };
     case "card":
       return { ...turn, cards: [...turn.cards, event.card] };
     case "answer_delta":

@@ -9,7 +9,7 @@ const label = (agent: string) => agent;
 function turnAfter(events: StreamEvent[]) {
   return events.reduce((turn, event) => applyEvent(turn, event, 1000), newTurn("t", "hi", 1000));
 }
-const PLAN: StreamEvent = { type: "plan", agents: [{ agent: "venues", task: "x" }, { agent: "itinerary", task: "y" }], reason: "r", trip: TRIP, clarify: null, ms: 12000 };
+const PLAN: StreamEvent = { type: "plan", agents: [{ agent: "venues", task: "x" }, { agent: "itinerary", task: "y" }], reason: "r", trip: TRIP, ms: 12000 };
 
 describe("progressSteps", () => {
   it("shows the plan running before the plan event", () => {
@@ -18,7 +18,7 @@ describe("progressSteps", () => {
   });
 
   it("shows running and waiting agents with the plan duration", () => {
-    const steps = progressSteps(turnAfter([PLAN, { type: "agent_start", agent: "venues", task: "x" }]), label);
+    const steps = progressSteps(turnAfter([PLAN, { type: "agent_start", agent: "venues" }]), label);
     expect(steps.map((s) => s.state)).toEqual(["done", "running", "waiting", "waiting"]);
     expect(steps[0].ms).toBe(12000);
   });
@@ -27,9 +27,9 @@ describe("progressSteps", () => {
     const steps = progressSteps(
       turnAfter([
         PLAN,
-        { type: "agent_start", agent: "venues", task: "x" },
+        { type: "agent_start", agent: "venues" },
         { type: "agent_end", agent: "venues", status: "ok", summary: "", ms: 500 },
-        { type: "agent_start", agent: "itinerary", task: "y" },
+        { type: "agent_start", agent: "itinerary" },
         { type: "agent_end", agent: "itinerary", status: "timeout", summary: "", ms: 900 },
         { type: "tool_start", callId: "p", owner: "orchestrator", tool: "policy_check", input: {} },
         { type: "tool_end", callId: "p", ok: true, summary: "", data: {}, sources: [], gaps: [], cached: false, ms: 3 },

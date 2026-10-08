@@ -1,6 +1,6 @@
 import path from "node:path";
 import { createApp } from "./app";
-import { ROOT_DIR, loadConfig, loadDotEnv, type Config } from "./config";
+import { CACHE_DIR, ROOT_DIR, loadConfig, loadDotEnv, type Config } from "./config";
 import { createHealthCheck, describeHealth } from "./health";
 import { newTrip } from "./orchestrator/trip";
 import { createRuntime } from "./runtime";
@@ -17,7 +17,7 @@ try {
 
 const health = createHealthCheck(config.apiKey, config.models);
 const app = createApp({
-  store: createStore(newTrip, { dir: path.join(config.cacheDir, "conversations") }),
+  store: createStore(newTrip, { dir: path.join(CACHE_DIR, "conversations") }),
   turnDeps: createRuntime(config).turnDeps,
   health,
   webDist: path.join(ROOT_DIR, "web", "dist"),

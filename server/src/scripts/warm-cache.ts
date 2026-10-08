@@ -2,10 +2,10 @@
 // Usage: npm run warm-cache (no API key needed). Safe to run again: cached steps are instant.
 import { createDataSources } from "../clients/data-sources";
 import { createHttp } from "../clients/http";
-import { USER_AGENT, cacheDirFromEnv, loadDotEnv } from "../config";
+import { CACHE_DIR, USER_AGENT } from "../config";
 import { listCities } from "../data/consoto-data";
 import { resolveSearchPeriod } from "../domain/dates";
-import { sleepMs } from "../lib/sleep";
+import { sleepMs } from "../lib/time";
 import { newTrip } from "../orchestrator/trip";
 import { todayIso } from "../runtime";
 import { budgetEstimateCost } from "../tools/budget-estimate-cost";
@@ -14,8 +14,7 @@ import { placesFindForTeam } from "../tools/places-find-for-team";
 import { runTool, type AnyTool, type ToolContext } from "../tools/types";
 import { weatherGetOutlook } from "../tools/weather-get-outlook";
 
-loadDotEnv();
-const data = createDataSources(createHttp({ cacheDir: cacheDirFromEnv(), userAgent: USER_AGENT }));
+const data = createDataSources(createHttp({ cacheDir: CACHE_DIR, userAgent: USER_AGENT }));
 const today = todayIso();
 const period = resolveSearchPeriod({ month: 3, part: "second_half" }, today);
 const cities = listCities();

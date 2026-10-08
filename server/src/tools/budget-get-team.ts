@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { getTeam, listTeams, teamNeeds } from "../data/consoto-data";
-import { describeNeeds, internalSource } from "./helpers";
-import { defineTool, fail, ok } from "./types";
+import { getTeam, teamNeeds } from "../data/consoto-data";
+import { describeNeeds, internalSource, unknownTeam } from "./helpers";
+import { defineTool, ok } from "./types";
 
 export const budgetGetTeam = defineTool({
   name: "budget_get_team",
@@ -10,9 +10,7 @@ export const budgetGetTeam = defineTool({
   input: z.object({ team: z.string().min(1).describe('Team id or name, for example "platform" or "Platform team"') }),
   async execute({ team }) {
     const found = getTeam(team);
-    if (!found) {
-      return fail("unknown_team", `No team data for "${team}".`, `Known teams: ${listTeams().join(", ")}. Tell the user there is no data for this team.`);
-    }
+    if (!found) return unknownTeam(team);
     const needs = teamNeeds(found);
     return ok(
       `${found.name} team: ${found.members.length} people; needs: ${describeNeeds(needs)}.`,

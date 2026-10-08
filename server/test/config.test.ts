@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import path from "node:path";
-import { DEFAULT_MODELS, ROOT_DIR, loadConfig } from "../src/config";
+import { DEFAULT_MODELS, loadConfig } from "../src/config";
 
 describe("loadConfig", () => {
   it("reads the key, splits the model list and applies defaults", () => {
@@ -9,7 +8,6 @@ describe("loadConfig", () => {
     expect(config.models).toEqual(["a:free", "b:free", "openrouter/free"]);
     expect(config.port).toBe(3000);
     expect(config.llmRequestsPerMinute).toBe(15);
-    expect(config.cacheDir).toBe(path.join(ROOT_DIR, ".cache"));
   });
 
   it("uses the default model list when none is set", () => {

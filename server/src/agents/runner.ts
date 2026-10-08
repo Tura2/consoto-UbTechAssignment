@@ -7,7 +7,7 @@ import { toChatTool } from "../llm/schema";
 import { fail, runToolWithEvents, type AnyTool, type ToolContext, type ToolResult } from "../tools/types";
 import type { AgentDef } from "./registry";
 
-export type ToolRun = { tool: string; input: unknown; result: ToolResult };
+export type ToolRun = { tool: string; result: ToolResult };
 
 export type AgentResult = {
   agent: AgentId;
@@ -50,7 +50,7 @@ export async function runAgent(args: {
 }): Promise<AgentResult> {
   const { def, ctx, llm, emit } = args;
   const started = Date.now();
-  emit({ type: "agent_start", agent: def.id, task: args.task });
+  emit({ type: "agent_start", agent: def.id });
   const tools = new Map(def.tools.map((tool) => [tool.name, tool]));
   const chatTools = def.tools.map((tool) => toChatTool(tool.name, tool.description, tool.input));
   const system = [def.instructions, `Today is ${ctx.today}.`, `Current trip: ${JSON.stringify(ctx.trip)}`, args.extraContext ?? ""]
@@ -65,7 +65,7 @@ export async function runAgent(args: {
 
   try {
     for (let round = 0; round < def.maxRounds; round++) {
-      const { message } = await llm.complete({ who: def.id, messages, tools: chatTools, signal: ctx.signal }, emit);
+      const message = await llm.complete({ who: def.id, messages, tools: chatTools, signal: ctx.signal }, emit);
       const calls = (message.tool_calls ?? []).filter((call) => call.type === "function");
       if (calls.length === 0) {
         summary = message.content?.trim() || "Done.";
@@ -77,11 +77,11 @@ export async function runAgent(args: {
           const input = parseArguments(call.function.arguments);
           const tool = tools.get(call.function.name) ?? unknownTool(call.function.name, def.tools);
           const result = await runToolWithEvents({ tool, input, ctx, owner: def.id, emit });
-          return { id: call.id, tool: call.function.name, input, result };
+          return { id: call.id, tool: call.function.name, result };
         }),
       );
       for (const run of results) {
-        toolRuns.push({ tool: run.tool, input: run.input, result: run.result });
+        toolRuns.push({ tool: run.tool, result: run.result });
         messages.push({ role: "tool", tool_call_id: run.id, content: forModel(run.result) });
       }
     }

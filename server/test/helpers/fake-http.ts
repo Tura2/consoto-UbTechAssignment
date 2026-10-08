@@ -9,7 +9,6 @@ export function fakeHttp(body: unknown): { http: Http; calls: RequestSpec[] } {
       return {
         body,
         source: { name: spec.name, url: spec.url, fetchedAt: "2026-10-06T08:00:00.000Z", cached: false },
-        stale: false,
       };
     },
   };

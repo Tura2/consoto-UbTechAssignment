@@ -3,17 +3,9 @@ import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import type { AgentId, Trip } from "../../../shared/domain";
-import type { ConversationSummary, StreamEvent } from "../../../shared/events";
+import type { ConversationSummary, Turn } from "../../../shared/events";
 import type { AgentResult } from "../agents/runner";
 import type { ChatMessage } from "../llm/openrouter";
-
-export type Turn = {
-  id: string;
-  userMessage: string;
-  events: StreamEvent[];
-  answer: string;
-  status: "running" | "done" | "stopped" | "error";
-};
 
 export type Finding = { depsKey: string; result: AgentResult };
 

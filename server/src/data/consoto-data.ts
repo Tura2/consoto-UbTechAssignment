@@ -3,8 +3,10 @@
 import { readFileSync } from "node:fs";
 import { z } from "zod";
 import type { DietNeed } from "../../../shared/domain";
+import type { CostRates } from "../domain/cost";
+import { DIETS } from "../domain/places";
 
-const Diet = z.enum(["vegan", "kosher", "gluten_free"]);
+const Diet = z.enum(DIETS);
 const MemberSchema = z.object({
   name: z.string(),
   role: z.string(),
@@ -19,9 +21,6 @@ const PolicySchema = z.object({
   maxNights: z.number().int().nonnegative(),
   budgetIlsPerPerson: z.number().positive(),
   overBudgetApprover: z.string(),
-  plannedCurrency: z.literal("EUR"),
-  reportedCurrency: z.literal("ILS"),
-  rateSource: z.literal("ECB"),
   rules: z.array(z.object({ id: z.number().int(), text: z.string() })).length(6),
 });
 const CityCostsSchema = z.object({
@@ -42,7 +41,6 @@ const DestinationsFileSchema = z.object({ note: z.string(), cities: z.record(z.s
 export type Member = z.infer<typeof MemberSchema>;
 export type Team = { id: string; name: string; members: Member[] };
 export type Policy = z.infer<typeof PolicySchema>;
-export type CityCosts = z.infer<typeof CityCostsSchema>;
 export type Destination = z.infer<typeof DestinationSchema> & { city: string };
 export type TeamNeeds = {
   diets: DietNeed[];
@@ -60,8 +58,6 @@ const teams = readJson("./consoto/team.json", TeamFileSchema).teams;
 const policy = readJson("./consoto/policy.json", PolicySchema);
 const costs = readJson("./consoto/costs.json", CostsFileSchema).cities;
 const destinations = readJson("./reference/destinations.json", DestinationsFileSchema).cities;
-
-const DIET_ORDER: DietNeed[] = ["vegan", "kosher", "gluten_free"];
 
 export function normalizeTeamId(input: string): string {
   return input.trim().toLowerCase().replace(/\s+team$/, "");
@@ -83,7 +79,7 @@ export function teamNeeds(team: Team): TeamNeeds {
     if (member.dietary) dietCounts[member.dietary] = (dietCounts[member.dietary] ?? 0) + 1;
   }
   return {
-    diets: DIET_ORDER.filter((diet) => dietCounts[diet]),
+    diets: DIETS.filter((diet) => dietCounts[diet]),
     dietCounts,
     wheelchairUsers: team.members.filter((member) => member.accessibility === "wheelchair").length,
   };
@@ -102,7 +98,7 @@ export function matchCity(name: string): string | null {
   return findKey(costs, name);
 }
 
-export function getCityCosts(city: string): CityCosts | null {
+export function getCityCosts(city: string): CostRates | null {
   const key = findKey(costs, city);
   return key ? costs[key] : null;
 }

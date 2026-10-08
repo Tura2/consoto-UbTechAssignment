@@ -2,10 +2,10 @@
 // and it is often overloaded, so: one query at a time, no retries inside a turn, cache for a week.
 import { z } from "zod";
 import type { Source } from "../../../shared/domain";
+import { WEEK_MS } from "../lib/time";
 import type { Http } from "./http";
 
 export const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
-const WEEK = 7 * 86_400_000;
 
 const OverpassBody = z.object({ elements: z.array(z.unknown()), remark: z.string().optional() });
 
@@ -26,7 +26,7 @@ export async function fetchOverpass(
     url: OVERPASS_URL,
     method: "POST",
     body: `data=${encodeURIComponent(query)}`,
-    ttlMs: WEEK,
+    ttlMs: WEEK_MS,
     timeoutMs: 30_000,
     retries: 0,
     maxConcurrency: 1,

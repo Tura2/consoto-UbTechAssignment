@@ -1,10 +1,10 @@
 // One HTTP helper for every public API: disk cache, in-flight dedupe, per-host concurrency,
-// retries only where a retry can help, and stale data (labeled) when the API is down.
+// retries only where a retry can help, and cached data (labeled with its fetch time) when the API is down.
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { Source } from "../../../shared/domain";
-import { sleepMs } from "../lib/sleep";
+import { parseRetryAfter, sleepMs } from "../lib/time";
 
 export type RequestSpec = {
   name: string;
@@ -19,7 +19,7 @@ export type RequestSpec = {
   validate?: (body: unknown) => void; // throw to reject a 200 response before it is cached
 };
 
-export type HttpResult = { body: unknown; source: Source; stale: boolean };
+export type HttpResult = { body: unknown; source: Source };
 
 export class HttpError extends Error {
   constructor(
@@ -43,8 +43,10 @@ type Options = {
   fetchImpl?: typeof fetch;
   now?: () => number;
   sleep?: (ms: number, signal?: AbortSignal) => Promise<void>;
-  maxRetryWaitMs?: number;
 };
+
+// The most a request waits between its retries, in total.
+const MAX_RETRY_WAIT_MS = 10_000;
 
 class Semaphore {
   private active = 0;
@@ -64,17 +66,10 @@ class Semaphore {
   }
 }
 
-function parseRetryAfter(raw: string | null): number | null {
-  if (!raw) return null;
-  const seconds = Number(raw);
-  return Number.isFinite(seconds) && seconds >= 0 ? seconds * 1000 : null;
-}
-
 export function createHttp(options: Options): Http {
   const fetchImpl = options.fetchImpl ?? fetch;
   const now = options.now ?? Date.now;
   const sleep = options.sleep ?? sleepMs;
-  const maxRetryWaitMs = options.maxRetryWaitMs ?? 10_000;
   const inFlight = new Map<string, Promise<HttpResult>>();
   const hosts = new Map<string, Semaphore>();
 
@@ -164,25 +159,25 @@ export function createHttp(options: Options): Http {
         } catch {
           // Ignore cache write errors (read-only disk, ENOSPC, missing dir, etc).
         }
-        return { body, source: sourceOf(spec, fetchedAt, false), stale: false };
+        return { body, source: sourceOf(spec, fetchedAt, false) };
       } catch (error) {
         if (spec.signal?.aborted) throw error;
         lastError = error instanceof HttpError ? error : new HttpError(`${spec.name}: ${(error as Error).message}`, null, true);
         if (!lastError.retryable || attempt === retries) break;
         const wait = lastError.retryAfterMs ?? 500 * 3 ** attempt;
-        if (waited + wait > maxRetryWaitMs) break;
+        if (waited + wait > MAX_RETRY_WAIT_MS) break;
         waited += wait;
         await sleep(wait, spec.signal);
       }
     }
-    if (cached) return { body: cached.body, source: sourceOf(spec, cached.fetchedAt, true), stale: true };
+    if (cached) return { body: cached.body, source: sourceOf(spec, cached.fetchedAt, true) };
     throw lastError;
   }
 
   async function load(spec: RequestSpec, key: string): Promise<HttpResult> {
     const cached = await readCache(key);
     if (cached && now() - cached.fetchedAt < spec.ttlMs) {
-      return { body: cached.body, source: sourceOf(spec, cached.fetchedAt, true), stale: false };
+      return { body: cached.body, source: sourceOf(spec, cached.fetchedAt, true) };
     }
     return fetchWithRetries(spec, key, cached);
   }

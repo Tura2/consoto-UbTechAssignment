@@ -1,7 +1,8 @@
 import type { AgentId } from "../../../shared/domain";
+import { AGENT_NAMES } from "../format";
 import { OWNER_ICON, ownerName, toneClass } from "./icons";
 
-const AGENTS: AgentId[] = ["budget_policy", "weather_calendar", "venues", "itinerary"];
+const AGENTS = Object.keys(AGENT_NAMES) as AgentId[];
 
 export function EmptyState() {
   return (

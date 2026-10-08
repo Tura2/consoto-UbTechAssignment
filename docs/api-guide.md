@@ -1,5 +1,7 @@
 # API guide
 
+> Written before the code. Where this file and the code differ, the README is the source of truth.
+
 How each external API works and how this project should call it: auth, the
 request, pagination, rate limits, errors, caching, and how not to waste
 requests. Checked on 2026-10-06 against the official docs and with live calls.

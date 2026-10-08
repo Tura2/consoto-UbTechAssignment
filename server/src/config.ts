@@ -4,6 +4,8 @@ import { fileURLToPath } from "node:url";
 
 // server/src/config.ts -> repo root is two folders up.
 export const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+// Cached API responses and saved conversations.
+export const CACHE_DIR = path.join(ROOT_DIR, ".cache");
 export const USER_AGENT = "ConsotoOffsiteAssistant/1.0 (local demo)";
 export const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 export const DEFAULT_MODELS =
@@ -14,7 +16,6 @@ export type Config = {
   models: string[];
   port: number;
   llmRequestsPerMinute: number;
-  cacheDir: string;
 };
 
 type Env = Record<string, string | undefined>;
@@ -40,12 +41,7 @@ export function loadConfig(env: Env = process.env): Config {
     models,
     port: positiveInt(env.PORT, 3000, "PORT"),
     llmRequestsPerMinute: positiveInt(env.LLM_REQUESTS_PER_MINUTE, 15, "LLM_REQUESTS_PER_MINUTE"),
-    cacheDir: cacheDirFromEnv(env),
   };
-}
-
-export function cacheDirFromEnv(env: Env = process.env): string {
-  return path.resolve(ROOT_DIR, env.CACHE_DIR ?? ".cache");
 }
 
 function positiveInt(raw: string | undefined, fallback: number, name: string): number {

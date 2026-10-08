@@ -1,6 +1,6 @@
 // The brief: "Cost per person = return flight + hotel per night + meals and activities per day."
 // We read it as flight + nights * hotel + days * (meals + activities), with nights = days - 1.
-import type { CityCost, CostBreakdownEur } from "../../../shared/domain";
+import type { CityCost, CostBreakdownEur, Rate } from "../../../shared/domain";
 
 export type CostRates = {
   returnFlight: number;
@@ -25,7 +25,7 @@ export function estimateCityCost(args: {
   days: number;
   nights: number;
   teamSize: number;
-  rate: { value: number; date: string };
+  rate: Rate;
   budgetIlsPerPerson: number;
 }): CityCost {
   const { breakdown, total } = perPersonEur(args.rates, args.days, args.nights);

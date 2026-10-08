@@ -3,10 +3,8 @@ import type { StreamEvent } from "../../shared/events";
 import { AGENTS, agentsInfo } from "../src/agents/registry";
 import { runAgent } from "../src/agents/runner";
 import type { Llm } from "../src/llm/openrouter";
-import { makeCtx } from "./helpers/ctx";
+import { MARCH, makeCtx } from "./helpers/ctx";
 import { scriptedLlm, text, toolCall, toolCalls } from "./helpers/fake-llm";
-
-const MARCH = { from: "2027-03-16", to: "2027-03-31" };
 
 function collect() {
   const events: StreamEvent[] = [];
@@ -58,7 +56,7 @@ describe("runAgent", () => {
   it("reports a timeout when the turn's agent budget runs out", async () => {
     const waitForAbort: Llm = {
       complete: (request) => new Promise((_, reject) => request.signal.addEventListener("abort", () => reject(request.signal.reason))),
-      stream: async () => ({ text: "", model: "" }),
+      stream: async () => "",
     };
     const { events, emit } = collect();
     const result = await runAgent({ def: AGENTS.venues, task: "Find", ctx: makeCtx({ signal: AbortSignal.timeout(20) }), llm: waitForAbort, emit });
@@ -73,13 +71,13 @@ describe("runAgent", () => {
         controller.abort();
         throw new Error("aborted");
       },
-      stream: async () => ({ text: "", model: "" }),
+      stream: async () => "",
     };
     await expect(runAgent({ def: AGENTS.venues, task: "Find", ctx: makeCtx({ signal: controller.signal }), llm: stopNow, emit: () => {} })).rejects.toThrow();
   });
 
   it("reports an LLM failure as an agent error", async () => {
-    const busy: Llm = { complete: async () => { throw new Error("All configured models are busy"); }, stream: async () => ({ text: "", model: "" }) };
+    const busy: Llm = { complete: async () => { throw new Error("All configured models are busy"); }, stream: async () => "" };
     const result = await runAgent({ def: AGENTS.venues, task: "Find", ctx: makeCtx(), llm: busy, emit: () => {} });
     expect(result).toMatchObject({ status: "error", summary: "All configured models are busy" });
   });

@@ -17,6 +17,9 @@ export type Trip = {
 
 export type Source = { name: string; url: string; fetchedAt: string; cached: boolean };
 
+// EUR to ILS at the ECB, with the date the ECB published it.
+export type Rate = { value: number; date: string };
+
 export type HolidayItem = {
   date: string;
   name: string;
@@ -59,7 +62,7 @@ export type CityCost = {
   perPersonIls: number;
   teamSize: number;
   teamTotalIls: number;
-  rate: { value: number; date: string };
+  rate: Rate;
   budgetIlsPerPerson: number;
   withinBudget: boolean;
   headroomIls: number;
@@ -71,10 +74,7 @@ export type Place = {
   kind: "food" | "sight";
   diets: DietNeed[];
   wheelchair: Wheelchair;
-  lat: number;
-  lon: number;
   osmUrl: string;
-  cuisine: string | null;
 };
 
 export type VenuesResult = {
@@ -108,7 +108,6 @@ export type ItineraryPlan = { days: { date: string; items: ItineraryItem[] }[] }
 export type ItineraryCheck = {
   accepted: boolean;
   problems: string[];
-  notes: string[];
   uncoveredMeals: string[];
   mealsCoveredByCatering: string[];
   inaccessible: string[];

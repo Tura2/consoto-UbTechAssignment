@@ -13,12 +13,10 @@ import {
   Workflow,
   type LucideIcon,
 } from "lucide-react";
-import type { AgentId } from "../../../shared/domain";
+import type { StepOwner } from "../../../shared/events";
 import { AGENT_NAMES } from "../format";
 
-export type Owner = AgentId | "orchestrator";
-
-export const OWNER_ICON: Record<Owner, LucideIcon> = {
+export const OWNER_ICON: Record<StepOwner, LucideIcon> = {
   budget_policy: Wallet,
   weather_calendar: CalendarDays,
   venues: UtensilsCrossed,
@@ -26,11 +24,11 @@ export const OWNER_ICON: Record<Owner, LucideIcon> = {
   orchestrator: Workflow,
 };
 
-export const ownerName = (owner: Owner) => (owner === "orchestrator" ? "Orchestrator" : AGENT_NAMES[owner]);
-export const toneClass = (owner: Owner) => `tone-${owner}`;
+export const ownerName = (owner: StepOwner) => (owner === "orchestrator" ? "Orchestrator" : AGENT_NAMES[owner]);
+export const toneClass = (owner: StepOwner) => `tone-${owner}`;
 
 // A small label naming the agent, in its colour.
-export function OwnerTag({ owner }: { owner: Owner }) {
+export function OwnerTag({ owner }: { owner: StepOwner }) {
   const Icon = OWNER_ICON[owner];
   return (
     <span className={`owner-tag ${toneClass(owner)}`}>

@@ -55,7 +55,6 @@ export function checkItinerary(
   return {
     accepted: problems.length === 0,
     problems,
-    notes: [...toConfirm].map((name) => `Confirm step-free access at ${name}.`),
     uncoveredMeals,
     mealsCoveredByCatering,
     inaccessible: [...inaccessible],

@@ -65,11 +65,7 @@ export function createApp(deps: AppDeps): express.Express {
       res.status(404).json({ error: "Conversation not found" });
       return;
     }
-    res.json({
-      id: conversation.id,
-      trip: conversation.trip,
-      turns: conversation.turns.map(({ id, userMessage, events, answer, status }) => ({ id, userMessage, events, answer, status })),
-    });
+    res.json({ id: conversation.id, turns: conversation.turns });
   });
 
   app.get("/api/health", async (_req, res) => {

@@ -13,10 +13,10 @@ export function progressSteps(turn: TurnView, label: (agent: string) => string):
     { key: "plan", label: "Plan", state: turn.plan ? "done" : finished ? "failed" : "running", ms: turn.plan?.ms ?? null, startedAt: turn.startedAt },
   ];
   for (const planned of turn.plan?.agents ?? []) {
-    const view = turn.agents.find((agent) => agent.agent === planned.agent);
+    const view = turn.agents.find((agent) => agent.agent === planned);
     steps.push({
-      key: planned.agent,
-      label: label(planned.agent),
+      key: planned,
+      label: label(planned),
       state: view ? AGENT_STATE[view.status] : finished ? "failed" : "waiting",
       ms: view?.ms ?? null,
       startedAt: view?.startedAt ?? null,

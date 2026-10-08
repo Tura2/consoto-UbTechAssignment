@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { DietNeed, Place } from "../../shared/domain";
+import type { Place } from "../../shared/domain";
 import { OVERPASS_URL, checkOverpassRemark, fetchOverpass } from "../src/clients/overpass";
 import { allPlaces, buildPlacesQuery, readWheelchair, summarizeVenues, toPlace } from "../src/domain/places";
 import overpass from "./fixtures/overpass-lisbon.json";
 import { fakeHttp } from "./helpers/fake-http";
+import { LISBON_NEEDS as NEEDS } from "./helpers/lisbon";
 
-const NEEDS: DietNeed[] = ["vegan", "kosher", "gluten_free"];
 const places = overpass.elements.map(toPlace).filter((place): place is Place => place !== null);
 
 describe("places", () => {
@@ -32,10 +32,7 @@ describe("places", () => {
       kind: "food",
       diets: ["vegan", "gluten_free"],
       wheelchair: "yes",
-      lat: 38.71032,
-      lon: -9.13969,
       osmUrl: "https://www.openstreetmap.org/node/6124516487",
-      cuisine: null,
     });
     expect(places[5].kind).toBe("sight");
   });

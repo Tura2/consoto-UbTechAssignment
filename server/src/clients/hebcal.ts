@@ -2,9 +2,8 @@
 // minor fast days are not requested, and anything still marked as a fast is dropped.
 import { z } from "zod";
 import type { HolidayItem, Source } from "../../../shared/domain";
+import { WEEK_MS } from "../lib/time";
 import type { Http } from "./http";
-
-const WEEK = 7 * 86_400_000;
 
 const HebcalBody = z.object({
   items: z.array(z.object({ title: z.string(), date: z.string(), category: z.string(), subcat: z.string().optional() })),
@@ -35,6 +34,6 @@ export async function fetchIsraelHolidays(
   to: string,
   signal?: AbortSignal,
 ): Promise<{ items: HolidayItem[]; source: Source }> {
-  const result = await http.getJson({ name: "Hebcal (Israeli holidays)", url: hebcalUrl(from, to), ttlMs: WEEK, timeoutMs: 8_000, signal });
+  const result = await http.getJson({ name: "Hebcal (Israeli holidays)", url: hebcalUrl(from, to), ttlMs: WEEK_MS, timeoutMs: 8_000, signal });
   return { items: parseHebcal(result.body), source: result.source };
 }

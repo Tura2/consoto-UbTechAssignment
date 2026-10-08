@@ -41,7 +41,6 @@ export function createHealthCheck(
       freeRequestsLimit: free?.limit ?? null,
       isFreeTier: key?.body?.data?.is_free_tier ?? null,
       models: models.map((id) => ({ id, available: list?.body ? withTools.has(id) : null })),
-      checkedAt: new Date(now()).toISOString(),
     };
     cached = { at: now(), info };
     return info;

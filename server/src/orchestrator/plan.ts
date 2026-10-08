@@ -2,7 +2,6 @@
 import { z } from "zod";
 import type { Trip } from "../../../shared/domain";
 import type { Emit } from "../../../shared/events";
-import { AGENT_IDS } from "../agents/ids";
 import { AGENT_LIST } from "../agents/registry";
 import type { ChatMessage, Llm } from "../llm/openrouter";
 import { toChatTool } from "../llm/schema";
@@ -13,7 +12,7 @@ import { TripUpdateSchema, applyTripUpdate, namedCandidates } from "./trip";
 export const PlanSchema = z.object({
   tripUpdate: TripUpdateSchema.describe("Only the trip facts the latest message adds or changes ({} if none)"),
   agents: z
-    .array(z.object({ agent: z.enum(AGENT_IDS), task: z.string().min(1).describe("A direct instruction with the cities, dates and team") }))
+    .array(z.object({ agent: z.enum(AGENT_LIST.map((agent) => agent.id)), task: z.string().min(1).describe("A direct instruction with the cities, dates and team") }))
     .max(4)
     .describe("The agents to run ([] only to answer without them or to ask the clarify question)"),
   reason: z.string().min(1).describe("One sentence for the user: why these agents"),
@@ -98,7 +97,7 @@ export async function makePlan(args: {
   ];
   let usable: Plan | null = null; // a valid plan with a problem, kept in case the second attempt fails
   for (let attempt = 0; attempt < 2; attempt++) {
-    const { message } = await args.llm.complete(
+    const message = await args.llm.complete(
       {
         who: "planner",
         messages,

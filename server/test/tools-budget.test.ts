@@ -2,9 +2,7 @@ import { describe, expect, it } from "vitest";
 import { budgetEstimateCost, type CostData } from "../src/tools/budget-estimate-cost";
 import { budgetGetTeam } from "../src/tools/budget-get-team";
 import { runTool } from "../src/tools/types";
-import { makeCtx } from "./helpers/ctx";
-
-const ALL = ["Lisbon", "Barcelona", "Athens", "Prague", "Budapest"];
+import { ALL_CITIES as ALL, makeCtx } from "./helpers/ctx";
 
 describe("budget_get_team", () => {
   it("returns the team and its needs", async () => {

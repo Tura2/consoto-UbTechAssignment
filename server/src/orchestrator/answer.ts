@@ -83,7 +83,7 @@ function compactForAnswer(tool: string, data: unknown): unknown {
           })),
         })),
         problems: check.problems,
-        toConfirm: check.notes,
+        confirmStepFreeAccessAt: check.accessToConfirm,
         cateringNeeded: check.mealsCoveredByCatering,
       };
     }
@@ -132,8 +132,7 @@ export async function streamAnswer(args: {
     ...args.history,
     { role: "user", content: args.message },
   ];
-  const { text } = await args.llm.stream({ who: "answer", messages, maxTokens: 3_000, signal: args.signal }, args.emit, (delta) =>
+  return args.llm.stream({ who: "answer", messages, maxTokens: 3_000, signal: args.signal }, args.emit, (delta) =>
     args.emit({ type: "answer_delta", text: delta }),
   );
-  return text;
 }

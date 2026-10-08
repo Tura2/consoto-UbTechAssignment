@@ -20,7 +20,7 @@ Open http://localhost:3000 and type the first demo message from the brief. A fin
 
 - Free OpenRouter models allow 20 requests per minute. An account that never bought credits gets 50 free requests per day; one that bought $10 or more gets 1,000. One chat message uses about 5 to 8 requests. The header shows how many are left today.
 - `npm run warm-cache` fetches the demo's public data ahead of time. The OpenStreetMap servers are often busy, and cached data keeps the demo smooth. No key needed.
-- `npm run check-models` sends one tool call to each configured model and prints how long it took.
+- `npm run check-models` prints the free requests left today, then sends one tool call to each configured model and prints how long it took.
 - `npm run dev` runs the server and the Vite dev server with hot reload on http://localhost:5173.
 
 ## How it works
@@ -91,7 +91,7 @@ Every tool is one file in `server/src/tools/` with a zod input schema, a descrip
 
 ### Failures
 
-- **Rate limits.** We cap ourselves at 15 LLM requests per minute, under OpenRouter's 20. On a 429, the next model in `OPENROUTER_MODELS` takes over at once (except OpenRouter's free daily cap, which stops the turn with a clear message, since no other model can help). A reply cut off by the token limit also counts as a failed attempt and falls to the next model. When every model is busy, we wait (the `Retry-After` value, or 2 s) and try once more, then report it. Every attempt shows in the chat.
+- **Rate limits.** We cap ourselves at 15 LLM requests per minute, under OpenRouter's 20. On a 429, the next model in `OPENROUTER_MODELS` takes over at once (except OpenRouter's free daily cap, which stops the turn with a clear message, since no other model can help). A reply cut off by the token limit also counts as a failed attempt and falls to the next model. When every model is busy, we wait (the `Retry-After` value, or 2 s) and try once more, then report it. Every attempt shows in the chat, with the model that answered (`openrouter/free` picks one for us).
 - **Account problems.** A bad key or missing credits stops at once with a message that says what to fix.
 - **Broken answers.** A stream that breaks after text arrived keeps the partial text and offers "Try again".
 - **Public APIs.** One shared HTTP helper handles all of them:
@@ -106,13 +106,13 @@ Every tool is one file in `server/src/tools/` with a zod input schema, a descrip
 
 | Route | What it does |
 | --- | --- |
-| `POST /api/chat` | `{ conversationId?, message }` in; a `text/event-stream` of typed events out (`plan`, `agent_start`, `tool_start`, `tool_end`, `llm_call`, `llm_wait`, `card`, `answer_delta`, `turn_end`) |
+| `POST /api/chat` | `{ conversationId?, message }` in; a `text/event-stream` of typed events out (`turn_start`, `plan`, `agent_start`, `agent_end`, `tool_start`, `tool_end`, `llm_call`, `llm_wait`, `card`, `answer_delta`, `turn_end`) |
 | `GET /api/conversations` | `{ conversations: [{ id, title, updatedAt, turns }] }`, newest first, for the History list |
 | `GET /api/conversations/:id` | The turns and events of a conversation, for reloading |
 | `GET /api/health` | Key status, free requests left today, configured models (uses no LLM requests) |
 | `GET /api/agents` | The agent catalog shown in "How it works" |
 
-Conversation state lives in server memory: the messages, the trip facts, and the latest result from each agent. One turn runs per conversation at a time. After every turn the conversation is also saved under `.cache/conversations` and listed under History in the UI. One finished demo conversation, `demo-lisbon.json`, is committed so it shows under History after a clone; every other saved conversation stays local (gitignored) and can be deleted to start clean.
+Conversation state lives in server memory: the messages, the trip facts, and the two results later turns reuse (the venue list and the latest draft itinerary). One turn runs per conversation at a time. After every turn the conversation is also saved under `.cache/conversations` and listed under History in the UI. One finished demo conversation, `demo-lisbon.json`, is committed so it shows under History after a clone; every other saved conversation stays local (gitignored) and can be deleted to start clean.
 
 ## Assumptions
 
@@ -122,7 +122,7 @@ Conversation state lives in server memory: the messages, the trip facts, and the
   - Every Hebcal holiday (major, minor, modern, Israel schedule) blocks a date; minor fast days do not.
   - Public holidays at the destination count, including regional ones for the city (for example Easter Monday in Catalonia).
   - There is no weekend rule; windows that include Friday or Saturday are labeled.
-- **Defaults.** If no dates are chosen, the earliest clean window is assumed, and the answer says so.
+- **Defaults.** If no dates are chosen, the earliest clean window is assumed, and the answer says so. If no team is named, the venue search assumes the Platform team, the only team in the data.
 - **Places.** Places are searched within 3 km of the city center.
 - **Internal data.** Consoto's internal data is the appendix of the brief, as JSON files read through one module (`server/src/data/consoto-data.ts`).
 

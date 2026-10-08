@@ -101,8 +101,8 @@ function PlanLine({ turn }: { turn: TurnView }) {
       {plan.agents.length > 0 && (
         <>
           <span>runs</span>
-          {plan.agents.map((entry) => (
-            <OwnerTag key={entry.agent} owner={entry.agent} />
+          {plan.agents.map((agent) => (
+            <OwnerTag key={agent} owner={agent} />
           ))}
         </>
       )}
@@ -201,7 +201,7 @@ function LlmLine({ turn, who, label }: { turn: TurnView; who: LlmCaller; label: 
 function StepRow({ step }: { step: StepView }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className={`step step-${step.status}`}>
+    <div>
       <button className="step-line" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
         <ChevronRight size={14} className="chevron" aria-hidden="true" />
         <StatusIcon status={step.status} size={15} />

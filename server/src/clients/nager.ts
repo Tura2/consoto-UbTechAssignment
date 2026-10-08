@@ -1,11 +1,10 @@
 // Public holidays by country from Nager.Date v4 (new domain; date.nager.at/api/v4 is a 404).
 import { z } from "zod";
 import type { HolidayItem, Source } from "../../../shared/domain";
+import { WEEK_MS } from "../lib/time";
 import type { Http } from "./http";
 
 export type CountryRef = { code: string; name: string; subdivisionCode: string | null };
-
-const WEEK = 7 * 86_400_000;
 
 const NagerRows = z.array(
   z.object({
@@ -47,7 +46,7 @@ export async function fetchCountryHolidays(
   const result = await http.getJson({
     name: `Nager.Date (${country.name} public holidays)`,
     url: nagerUrl(country.code, year),
-    ttlMs: WEEK,
+    ttlMs: WEEK_MS,
     timeoutMs: 8_000,
     signal,
   });

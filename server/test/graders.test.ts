@@ -7,7 +7,7 @@ import { BASE_TRIP } from "./helpers/ctx";
 
 const trip: Trip = { ...BASE_TRIP, days: 4, nights: 3 };
 const events: StreamEvent[] = [
-  { type: "plan", agents: [{ agent: "budget_policy", task: "x" }], reason: "r", trip, clarify: null, ms: 1 },
+  { type: "plan", agents: [{ agent: "budget_policy", task: "x" }], reason: "r", trip, ms: 1 },
   {
     type: "card",
     card: {

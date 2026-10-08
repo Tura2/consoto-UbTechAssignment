@@ -3,7 +3,7 @@
 import OpenAI from "openai";
 import type { Emit, LlmCaller } from "../../../shared/events";
 import { OPENROUTER_BASE_URL } from "../config";
-import { sleepMs } from "../lib/sleep";
+import { parseRetryAfter, sleepMs } from "../lib/time";
 
 export type ChatMessage = OpenAI.Chat.Completions.ChatCompletionMessageParam;
 export type ChatTool = OpenAI.Chat.Completions.ChatCompletionTool;
@@ -40,12 +40,13 @@ export type CompleteRequest = {
 export type StreamRequest = Omit<CompleteRequest, "tools" | "toolChoice">;
 
 export type Llm = {
-  complete(request: CompleteRequest, emit: Emit): Promise<{ message: AssistantMessage; model: string }>;
-  stream(request: StreamRequest, emit: Emit, onText: (text: string) => void): Promise<{ text: string; model: string }>;
+  complete(request: CompleteRequest, emit: Emit): Promise<AssistantMessage>;
+  stream(request: StreamRequest, emit: Emit, onText: (text: string) => void): Promise<string>;
 };
 
+// A failure that falling back to another model cannot fix: account problems, every model busy, a broken stream.
 export class LlmError extends Error {
-  constructor(message: string, readonly kind: "fatal" | "exhausted" | "interrupted") {
+  constructor(message: string) {
     super(message);
     this.name = "LlmError";
   }
@@ -106,14 +107,13 @@ function fatalMessage(error: unknown): string {
   return `OpenRouter refused the request (HTTP ${status}): ${(error as Error).message}`;
 }
 
+// The error's Retry-After, capped at 10 seconds so a turn never stalls for long.
 export function retryAfterMs(error: unknown): number | null {
   const headers = (error as { headers?: unknown }).headers;
   const raw = headers instanceof Headers ? headers.get("retry-after") : (headers as Record<string, string> | undefined)?.["retry-after"];
-  const seconds = Number(raw);
-  return raw && Number.isFinite(seconds) && seconds >= 0 ? Math.min(seconds * 1000, 10_000) : null;
+  const ms = parseRetryAfter(raw);
+  return ms === null ? null : Math.min(ms, 10_000);
 }
-
-type Tokens = { prompt: number; completion: number } | null;
 
 export function createLlm(options: {
   client: ChatClient;
@@ -129,36 +129,34 @@ export function createLlm(options: {
     who: LlmCaller,
     signal: AbortSignal,
     emit: Emit,
-    attempt: (model: string) => Promise<{ value: T; tokens: Tokens }>,
+    attempt: (model: string) => Promise<{ value: T; servedBy: string }>,
   ): Promise<T> {
-    let attemptNo = 0;
     let waitBeforeRetry: number | null = null;
     for (let pass = 0; pass < 2; pass++) {
       if (pass > 0) {
         const wait = waitBeforeRetry ?? 2_000;
-        emit({ type: "llm_wait", who, waitMs: wait, reason: "retry_after" });
+        emit({ type: "llm_wait", waitMs: wait, reason: "retry_after" });
         await sleep(wait, signal);
       }
       for (const model of options.models) {
-        attemptNo++;
-        await options.limiter.acquire(signal, (ms) => emit({ type: "llm_wait", who, waitMs: ms, reason: "local_limit" }));
+        await options.limiter.acquire(signal, (ms) => emit({ type: "llm_wait", waitMs: ms, reason: "local_limit" }));
         const started = Date.now();
         try {
-          const { value, tokens } = await attempt(model);
-          emit({ type: "llm_call", who, model, attempt: attemptNo, status: "ok", ms: Date.now() - started, detail: null, tokens });
+          const { value, servedBy } = await attempt(model);
+          emit({ type: "llm_call", who, model: servedBy, status: "ok", ms: Date.now() - started, detail: null });
           return value;
         } catch (error) {
           if (signal.aborted) throw error;
           const failure = classifyFailure(error, signal);
           const status = failure === "rate_limited" ? "rate_limited" : error instanceof EmptyReplyError ? "empty" : "error";
-          emit({ type: "llm_call", who, model, attempt: attemptNo, status, ms: Date.now() - started, detail: (error as Error).message, tokens: null });
+          emit({ type: "llm_call", who, model, status, ms: Date.now() - started, detail: (error as Error).message });
           if (error instanceof LlmError) throw error; // an interrupted stream is never retried
-          if (failure === "fatal") throw new LlmError(fatalMessage(error), "fatal");
+          if (failure === "fatal") throw new LlmError(fatalMessage(error));
           waitBeforeRetry = retryAfterMs(error) ?? waitBeforeRetry;
         }
       }
     }
-    throw new LlmError("All configured models are busy or rate limited right now. Try again in a minute.", "exhausted");
+    throw new LlmError("All configured models are busy or rate limited right now. Try again in a minute.");
   }
 
   return {
@@ -184,8 +182,7 @@ export function createLlm(options: {
         if (choice.finish_reason === "length") {
           throw new EmptyReplyError("Reply cut off at the token limit (finish_reason: length)");
         }
-        const tokens = response.usage ? { prompt: response.usage.prompt_tokens, completion: response.usage.completion_tokens } : null;
-        return { value: { message, model: response.model || model }, tokens };
+        return { value: message, servedBy: response.model || model };
       });
     },
 
@@ -209,12 +206,12 @@ export function createLlm(options: {
           }
         } catch (error) {
           if (text.length > 0 && !request.signal.aborted) {
-            throw new LlmError(`The answer was interrupted: ${(error as Error).message}`, "interrupted");
+            throw new LlmError(`The answer was interrupted: ${(error as Error).message}`);
           }
           throw error;
         }
         if (!text) throw new EmptyReplyError("The model streamed an empty reply");
-        return { value: { text, model: servedBy }, tokens: null };
+        return { value: text, servedBy };
       });
     },
   };

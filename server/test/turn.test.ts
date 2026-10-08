@@ -5,13 +5,10 @@ import { LlmError, type Llm } from "../src/llm/openrouter";
 import { newTrip } from "../src/orchestrator/trip";
 import { runTurn, type TurnDeps } from "../src/orchestrator/turn";
 import { createStore } from "../src/state/conversations";
-import { BASE_TRIP } from "./helpers/ctx";
+import { ALL_CITIES as ALL, BASE_TRIP, MARCH } from "./helpers/ctx";
 import { fakeData } from "./helpers/fake-data";
 import { scriptedLlm, text, toolCall, toolCalls } from "./helpers/fake-llm";
 import { GOOD_PLAN } from "./helpers/lisbon";
-
-const ALL = ["Lisbon", "Barcelona", "Athens", "Prague", "Budapest"];
-const MARCH = { from: "2027-03-16", to: "2027-03-31" };
 
 const deps = (llm: Llm, data = fakeData()): TurnDeps => ({ llm, data, today: () => "2026-10-06" });
 const cardsOf = (events: StreamEvent[]): Card[] => events.flatMap((e) => (e.type === "card" ? [e.card] : []));
@@ -125,7 +122,6 @@ describe("runTurn", () => {
     });
     const { events, turn } = await turnWith(llm, "Where should we go?");
     expect(events.filter((e) => e.type === "agent_start").map((e) => (e.type === "agent_start" ? e.agent : ""))).toEqual(["budget_policy", "weather_calendar"]);
-    expect(events).toContainEqual(expect.objectContaining({ type: "plan", clarify: null }));
     expect(turn.answer).not.toContain("Which European cities");
   });
 
@@ -156,10 +152,10 @@ describe("runTurn", () => {
 
   it("keeps the partial answer when the stream breaks", async () => {
     const llm: Llm = {
-      complete: async () => ({ message: toolCall("submit_plan", { tripUpdate: {}, agents: [], reason: "Greeting." }), model: "fake" }),
+      complete: async () => toolCall("submit_plan", { tripUpdate: {}, agents: [], reason: "Greeting." }),
       stream: async (_request, _emit, onText) => {
         onText("Partial ");
-        throw new LlmError("The answer was interrupted: socket closed", "interrupted");
+        throw new LlmError("The answer was interrupted: socket closed");
       },
     };
     const { events, turn } = await turnWith(llm, "Hi");
@@ -175,7 +171,7 @@ describe("runTurn", () => {
         controller.abort();
         throw new Error("aborted");
       },
-      stream: async () => ({ text: "", model: "" }),
+      stream: async () => "",
     };
     const conversation = createStore(newTrip).getOrCreate();
     const events: StreamEvent[] = [];
@@ -240,13 +236,13 @@ describe("runTurn", () => {
     const llm: Llm = {
       complete: async (_request, emit) => {
         lateEmit = emit;
-        return { message: toolCall("submit_plan", { tripUpdate: {}, agents: [], reason: "Greeting." }), model: "fake" };
+        return toolCall("submit_plan", { tripUpdate: {}, agents: [], reason: "Greeting." });
       },
-      stream: async () => ({ text: "", model: "" }),
+      stream: async () => "",
     };
     const { events } = await turnWith(llm, "Hi");
     const count = events.length;
-    lateEmit({ type: "llm_call", who: "planner", model: "fake", attempt: 1, status: "ok", ms: 1, detail: null, tokens: null });
+    lateEmit({ type: "llm_call", who: "planner", model: "fake", status: "ok", ms: 1, detail: null });
     expect(events).toHaveLength(count);
     expect(events.at(-1)?.type).toBe("turn_end");
   });

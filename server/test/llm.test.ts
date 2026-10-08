@@ -11,7 +11,6 @@ function completion(message: Record<string, unknown>, model = "m1", finish = "st
     created: 0,
     model,
     choices: [{ index: 0, finish_reason: finish, logprobs: null, message: { role: "assistant", content: null, refusal: null, ...message } }],
-    usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
   };
 }
 
@@ -45,12 +44,18 @@ describe("createLlm.complete", () => {
       () => { throw apiError(429); },
       (body) => completion({ content: "hello" }, String(body.model)),
     ]);
-    const result = await llm.complete(request, emit);
-    expect(result.model).toBe("m2");
-    expect(result.message.content).toBe("hello");
+    const message = await llm.complete(request, emit);
+    expect(message.content).toBe("hello");
     expect(statuses(events)).toEqual(["rate_limited", "ok"]);
+    expect(events.at(-1)).toMatchObject({ type: "llm_call", model: "m2", status: "ok" });
     expect(create.mock.calls.map((call) => call[0].model)).toEqual(["m1", "m2"]);
     expect(create.mock.calls[0][0].reasoning).toEqual({ effort: "low" });
+  });
+
+  it("reports the model that answered, which openrouter/free picks for us", async () => {
+    const { llm, events, emit } = setup([() => completion({ content: "ok" }, "meta/llama-free")]);
+    await llm.complete(request, emit);
+    expect(events).toEqual([expect.objectContaining({ type: "llm_call", model: "meta/llama-free", status: "ok" })]);
   });
 
   it("stops at once on a 401 with a clear message", async () => {
@@ -60,8 +65,9 @@ describe("createLlm.complete", () => {
   });
 
   it("moves on when a model is gone (404)", async () => {
-    const { llm, emit } = setup([() => { throw apiError(404); }, () => completion({ content: "ok" }, "m2")]);
-    expect((await llm.complete(request, emit)).model).toBe("m2");
+    const { llm, events, emit } = setup([() => { throw apiError(404); }, () => completion({ content: "ok" }, "m2")]);
+    await llm.complete(request, emit);
+    expect(statuses(events)).toEqual(["error", "ok"]);
   });
 
   it("treats an empty reply as a failure", async () => {
@@ -73,8 +79,7 @@ describe("createLlm.complete", () => {
   it("falls back when a reply with a tool call was cut off at the token limit", async () => {
     const cutOff = { tool_calls: [{ id: "c1", type: "function", function: { name: "submit_plan", arguments: '{"agents": [' } }] };
     const { llm, events, emit } = setup([() => completion(cutOff, "m1", "length"), () => completion({ content: "ok" }, "m2")]);
-    const result = await llm.complete(request, emit);
-    expect(result.model).toBe("m2");
+    await llm.complete(request, emit);
     expect(statuses(events)).toEqual(["empty", "ok"]);
     expect(events[0]).toMatchObject({ type: "llm_call", detail: expect.stringContaining("finish_reason: length") });
   });
@@ -95,7 +100,7 @@ describe("createLlm.complete", () => {
     ]);
     await expect(llm.complete(request, emit)).rejects.toThrow(/busy or rate limited/);
     expect(create).toHaveBeenCalledTimes(4);
-    expect(events).toContainEqual({ type: "llm_wait", who: "planner", waitMs: 2000, reason: "retry_after" });
+    expect(events).toContainEqual({ type: "llm_wait", waitMs: 2000, reason: "retry_after" });
   });
 
   it("uses Retry-After for the wait between passes", async () => {
@@ -105,27 +110,29 @@ describe("createLlm.complete", () => {
       () => completion({ content: "ok" }, "m1"),
     ]);
     await llm.complete(request, emit);
-    expect(events).toContainEqual({ type: "llm_wait", who: "planner", waitMs: 3000, reason: "retry_after" });
+    expect(events).toContainEqual({ type: "llm_wait", waitMs: 3000, reason: "retry_after" });
   });
 });
 
 describe("createLlm.stream", () => {
   it("streams text and reports the model that answered", async () => {
-    const { llm, emit } = setup([
+    const { llm, events, emit } = setup([
       () => (async function* () { yield chunk("Hel"); yield chunk("lo"); })(),
     ]);
     const parts: string[] = [];
-    const result = await llm.stream({ ...request, who: "answer" }, emit, (text) => parts.push(text));
+    const text = await llm.stream({ ...request, who: "answer" }, emit, (delta) => parts.push(delta));
     expect(parts).toEqual(["Hel", "lo"]);
-    expect(result).toEqual({ text: "Hello", model: "m1" });
+    expect(text).toBe("Hello");
+    expect(events).toEqual([expect.objectContaining({ type: "llm_call", who: "answer", model: "m1", status: "ok" })]);
   });
 
   it("falls back when the stream fails before any text", async () => {
-    const { llm, emit } = setup([
+    const { llm, events, emit } = setup([
       () => (async function* () { yield { ...chunk(""), error: { message: "Provider disconnected" } }; })(),
       () => (async function* () { yield chunk("Hi", "m2"); })(),
     ]);
-    expect((await llm.stream({ ...request, who: "answer" }, emit, () => {})).model).toBe("m2");
+    expect(await llm.stream({ ...request, who: "answer" }, emit, () => {})).toBe("Hi");
+    expect(events.at(-1)).toMatchObject({ type: "llm_call", model: "m2", status: "ok" });
   });
 
   it("fails as interrupted after text arrived, without retrying", async () => {

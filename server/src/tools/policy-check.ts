@@ -1,6 +1,5 @@
 import { z } from "zod";
-import type { PolicyVerdict, Source, Trip } from "../../../shared/domain";
-import type { Rate } from "../clients/frankfurter";
+import type { PolicyVerdict, Rate, Source, Trip } from "../../../shared/domain";
 import { getPolicy, getTeam, listCities } from "../data/consoto-data";
 import { addDays, buildWindows, describeWindow, nearestCleanWindows } from "../domain/dates";
 import { checkPolicy, type PolicyInput } from "../domain/policy";
@@ -18,8 +17,8 @@ export const policyCheck = defineTool({
   name: "policy_check",
   description:
     "Check the current trip against Consoto's six offsite rules: length, budget, holidays, meals, accessibility and currency. " +
-    "Takes no input: it reads the current trip and the latest itinerary. The orchestrator runs it at the end of every turn, " +
-    "so call it only to explain a specific rule.",
+    "Takes no input: it reads the current trip and the latest itinerary. No agent has it: the orchestrator runs it in code " +
+    "after every turn that has a city.",
   input: z.object({}),
   async execute(_input, ctx) {
     const { trip } = ctx;

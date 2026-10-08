@@ -1,6 +1,6 @@
 # Consoto Offsite Assistant: Design
 
-Date: 2026-10-06. Status: approved in brainstorming, pending written review.
+Date: 2026-10-06. Status: implemented; this is the current design document.
 
 Related: `docs/research.md` (reading notes, API research), `docs/api-guide.md`
 (how each external API works and how we call it), `docs/assignment-brief.pdf`
@@ -59,7 +59,7 @@ Prague?") or a policy break ("make it 4 days").
 | Weekend rule | None; label days that fall on the Israeli weekend (Fri, Sat) | The brief has no weekend rule |
 | Israeli holiday rule | Every Hebcal item from major, minor and modern holidays (Israel schedule) blocks its date; minor fast days are excluded | Simple and cautious reading of policy rule 3 |
 | Tests | Unit tests for code logic, plus a scenario eval script | Proves numbers live in code; the brief points to evals |
-| Out of scope | CI, trace tab, auth, persistence across restarts, deployment, booking | Not required by the brief |
+| Out of scope | CI, trace tab, auth, deployment, booking | Not required by the brief |
 
 ### Assumptions (stated in the UI and the README)
 
@@ -71,6 +71,8 @@ Prague?") or a policy break ("make it 4 days").
   policy maximum).
 - **Default dates.** If a city and search period are set but no start date,
   code picks the earliest clean window and the answer says it assumed it.
+- **Default team.** If no team is named, the venue search assumes the Platform
+  team, the only team in the data.
 - **Year.** A month with no year means its next occurrence after today (from
   October 2026, "March" is March 2027).
 - **Places.** Food and sights are searched within 3 km of the geocoded city
@@ -109,7 +111,7 @@ server/src/
   config.ts             reads and validates env
   health.ts, runtime.ts OpenRouter health check; builds the real dependencies
   orchestrator/         plan.ts, trip.ts, turn.ts, answer.ts, cards.ts, tool-data.ts
-  agents/               registry.ts (the four agents, their instructions and tools), ids.ts, runner.ts
+  agents/               registry.ts (the four agents, their instructions and tools), runner.ts
   tools/                one file per tool + helpers.ts + types.ts (ToolResult)
   domain/               cost.ts, policy.ts, dates.ts, climate.ts, places.ts, itinerary-check.ts
   data/consoto/         team.json, policy.json, costs.json (appendix, verbatim)
@@ -118,6 +120,7 @@ server/src/
   clients/              http.ts, data-sources.ts, open-meteo.ts, frankfurter.ts, nager.ts, hebcal.ts, overpass.ts
   llm/                  openrouter.ts (limiter, fallback, retries), schema.ts (zod to JSON schema)
   state/                conversations.ts (store, saved as JSON files)
+  lib/                  time.ts (time constants, sleep, Retry-After parsing)
   scripts/              warm-cache.ts, eval.ts, check-models.ts
   evals/                scenarios.ts, graders.ts
 server/test/            unit tests (vitest) and fixtures recorded from live API calls
@@ -138,6 +141,8 @@ evals/runs/             eval transcripts (gitignored)
 - `npm test`: unit tests. `npm run typecheck`: `tsc` across workspaces.
 - `npm run warm-cache`: fetches the demo's public API data ahead of time.
 - `npm run eval`: runs the scenario evals against the real model.
+- `npm run check-models`: the free requests left today, then one forced tool
+  call per configured model, with its latency.
 
 ### Dependencies
 
@@ -154,13 +159,13 @@ addition needs a reason in the plan.
   (`wheelchair` or null).
 - `policy.json`: the six rule texts verbatim, plus the parameters code uses:
   `maxDays: 3`, `maxNights: 2`, `budgetIlsPerPerson: 4000`,
-  `overBudgetApprover: "CFO"`, `plannedCurrency: "EUR"`,
-  `reportedCurrency: "ILS"`, `rateSource: "ECB"`.
+  `overBudgetApprover: "CFO"`.
 - `costs.json`: EUR per person for Lisbon, Barcelona, Athens, Prague, Budapest:
   `returnFlight`, `hotelPerNight`, `mealsPerDay`, `activitiesPerDay`.
 
 `consoto-data.ts` is the only code that reads these files. Its functions return
-typed objects or a typed "not found" result listing what does exist.
+typed objects, or null when something is not found (the tools then list what
+does exist).
 
 ### Reference data (ours, labeled as such)
 
@@ -192,7 +197,7 @@ type Conversation = {
   findings: Partial<Record<"venues" | "itinerary", { depsKey: string; result: AgentResult }>>;
   turns: Turn[];                          // user message, events, answer text, status
   updatedAt: string;                      // ISO time of the last save
-  activeTurn: AbortController | null;
+  active: AbortController | null;         // the running turn, if any
 };
 ```
 
@@ -284,8 +289,8 @@ they are not kept.
 ## 6. Agents and tools
 
 Every tool is one file exporting `{ name, description, input (zod), execute }`.
-`execute(input, ctx)` gets the trip state, an `AbortSignal` and an event
-emitter, and returns:
+`execute(input, ctx)` gets the trip state, the findings it may read (the venue
+list and the latest draft), the data sources and an `AbortSignal`, and returns:
 
 ```ts
 type ToolResult =
@@ -302,7 +307,7 @@ type Source = { name: string; url: string; fetchedAt: string; cached: boolean };
 | Budget & policy | `budget_get_team` | `team` | members, size, needs count (vegan 2, kosher 1, gluten_free 1, wheelchair 1) |
 | | `budget_estimate_cost` | `cities[]`, `days`, `team` | per city: EUR breakdown, EUR and ILS per person, ILS team total, ECB rate and its date, budget fit and headroom |
 | Weather & calendar | `calendar_find_clean_windows` | `cities[]`, `from`, `to`, `days` | Israeli and local holidays with sources; every window with weekdays, clashes, clean flag, Israeli-weekend note |
-| | `weather_get_outlook` | `cities[]`, `from`, `to` | a daily forecast if the whole range is within 16 days, otherwise a labeled climate average and `forecastAvailable: false` with the reason |
+| | `weather_get_outlook` | `cities[]`, `from`, `to` | a daily forecast if the whole range is within 16 days, otherwise a climate average (`kind: "climate_average"`) with the reason |
 | Venues scout | `places_find_for_team` | `city`, `team` | per need: top places with OSM links and wheelchair status; places covering the most needs; accessible sights; counts; gaps |
 | Orchestrator (code only, no agent) | `policy_check` | none (reads the trip and findings) | rules 1-6 with status, detail and fix; overall verdict |
 | Itinerary writer | `itinerary_submit_plan` | `days[{ date, items[{ slot, kind, venueIds[], catering[], note }] }]` | `accepted`, `problems[]`, `notes[]` from the code check |
@@ -319,8 +324,9 @@ Itinerary items: `slot` is `morning`, `lunch`, `afternoon` or `dinner`;
 - Non-streaming LLM calls (only the final answer streams). Up to 3 rounds; tool
   calls from one round run in parallel (Overpass still runs one at a time).
 - Every tool call emits `tool_start` and `tool_end`.
-- Returns `AgentResult { agent, status, summary, toolResults[], gaps, sources }`.
-  The orchestrator works from `toolResults`, not only from the model's summary.
+- Returns `AgentResult { agent, status, summary, toolRuns[] }`; each tool run
+  keeps the tool's full result (data, sources, gaps). The orchestrator works
+  from `toolRuns`, not only from the model's summary.
 
 The itinerary writer may submit at most twice: draft, read the code's
 problems, fix, resubmit. After the second submission the last plan is kept and
@@ -409,16 +415,16 @@ reloading), `GET /api/health` (key valid, free requests left today from
 OpenRouter `GET /key`, configured models still listed with tool support),
 `GET /api/agents` (the agent registry for the "How it works" drawer).
 
-### Events (`shared/src/events.ts`)
+### Events (`shared/events.ts`)
 
 | Event | Payload | Chat rendering |
 | --- | --- | --- |
 | `turn_start` | conversationId, turnId | new assistant turn |
-| `plan` | agents[{agent, task}], reason, trip, clarify? | "Orchestrator: running X and Y, because ..." |
-| `agent_start` / `agent_end` | agent, task / status, summary | agent group with spinner, then check or warning |
+| `plan` | agents[{agent, task}], reason, trip, ms | "Orchestrator: running X and Y, because ..." |
+| `agent_start` / `agent_end` | agent / agent, status, summary, ms | agent group with spinner, then check or warning |
 | `tool_start` / `tool_end` | callId, agent or `orchestrator`, tool, input / ok, summary, data, sources, gaps, cached, ms | one-line step, expandable |
-| `llm_call` | who, model, attempt, status (`ok`, `rate_limited`, `error`, `empty`), ms, tokens | detail inside the step; `rate_limited` shows a warning row |
-| `llm_wait` | who, waitMs, reason (`local_limit`, `retry_after`) | "waiting for a free slot" row |
+| `llm_call` | who, model (the model that answered, when ok), status (`ok`, `rate_limited`, `error`, `empty`), ms, detail | detail inside the step; `rate_limited` shows a warning row |
+| `llm_wait` | waitMs, reason (`local_limit`, `retry_after`) | "waiting for a free slot" row |
 | `card` | kind, data | result card |
 | `answer_delta` | text | streamed answer |
 | `turn_end` | status (`done`, `stopped`, `error`), llmCalls, ms, error? | footer: "done in 14 s, 7 LLM calls" |
@@ -438,7 +444,7 @@ OpenRouter `GET /key`, configured models still listed with tool support),
   (coverage per need, top places, gaps), `itinerary` (days, slots, venues,
   access notes).
 - Composer: Send becomes Stop while streaming; sending mid-turn aborts the turn.
-- Empty state: a short explanation; the user types the messages. A finished demo conversation (, committed) shows under History.
+- Empty state: a short explanation; the user types the messages. A finished demo conversation (`.cache/conversations/demo-lisbon.json`, committed) shows under History.
 - Rendering: a reducer applies events to the current turn; answer text is
   appended; large JSON renders only when a step is expanded.
 - Styling: plain CSS with CSS variables; no UI framework.
@@ -449,9 +455,8 @@ OpenRouter `GET /key`, configured models still listed with tool support),
 
 - `OPENROUTER_MODELS` is an ordered list of free tool-capable models, ending
   with `openrouter/free`. Default:
-  `google/gemma-4-31b-it:free,nvidia/nemotron-3-super-120b-a12b:free,openrouter/free`.
-  The first implementation task checks latency and tool calling for the
-  defaults and reorders them if needed.
+  `nvidia/nemotron-3-super-120b-a12b:free,google/gemma-4-31b-it:free,openrouter/free`,
+  ordered by the latency and tool-calling check in `npm run check-models`.
 - Fallback is our own loop, not OpenRouter's `models` parameter, so every
   attempt is visible in the chat. On 429, 5xx, 408, a network error, an empty
   reply, or a 400 or 404 that one model cannot serve, emit `llm_call` with the
@@ -487,7 +492,8 @@ OpenRouter `GET /key`, configured models still listed with tool support),
   with backoff and `Retry-After`, capped at 10 s total), stale cache served on
   failure and labeled with its fetch date, `User-Agent` on every request.
 - Overpass: one query at a time, `[timeout:25]`, no retries inside a turn; on
-  429, 504 or timeout use the cache or return a gap ("map servers are busy").
+  429, 504 or a timeout, serve the cache if there is one; otherwise the tool
+  fails with `source_unavailable` and the answer says the places are unavailable.
 - `npm run warm-cache` fetches all demo data for the five cities ahead of time,
   with Overpass queries spaced out.
 
@@ -548,8 +554,8 @@ responsibilities; failure handling; assumptions; trade-offs (files vs REST or
 MCP, planner vs agents-as-tools, our fallback loop vs OpenRouter's `models`,
 JSON-file state); what we would do next (internal data as an MCP server,
 a database for conversations, a trace view or OpenTelemetry export, CI, more teams and
-cities); "Adding a tool" in three steps (create the tool file, add it to one
-agent's tool list, add a unit test); how to run the evals; data attribution
+cities); "Adding a tool" in four steps (create the tool file, add it to one
+agent's tool list, add a client for a new public API, add a unit test); how to run the evals; data attribution
 (OpenStreetMap contributors, Open-Meteo, Hebcal, ECB via Frankfurter,
 Nager.Date).
 

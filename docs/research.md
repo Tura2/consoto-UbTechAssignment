@@ -1,5 +1,7 @@
 # Research notes
 
+> Written before the code. Where this file and the code differ, the README is the source of truth.
+
 Input for the design. Written 2026-10-06, before any code. Every API below was
 called for real on that date; the responses quoted are what came back.
 

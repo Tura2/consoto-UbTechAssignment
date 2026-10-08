@@ -1,13 +1,17 @@
 // Helpers used by more than one tool.
-import type { CityCost, HolidayItem, Source } from "../../../shared/domain";
-import { getCityCosts, getDestination, getPolicy, matchCity, type Team, type TeamNeeds } from "../data/consoto-data";
+import type { CityCost, HolidayItem, Rate, Source } from "../../../shared/domain";
+import { getCityCosts, getDestination, getPolicy, listTeams, matchCity, type Team, type TeamNeeds } from "../data/consoto-data";
 import { estimateCityCost } from "../domain/cost";
 import { lastDayOfMonth } from "../domain/dates";
 import { DIET_LABELS } from "../domain/places";
-import type { ToolContext } from "./types";
+import { fail, type ToolContext, type ToolResult } from "./types";
 
 export function internalSource(file: string): Source {
   return { name: `Consoto internal data (${file})`, url: `consoto-internal:${file}`, fetchedAt: new Date().toISOString(), cached: false };
+}
+
+export function unknownTeam(team: string): ToolResult {
+  return fail("unknown_team", `No team data for "${team}".`, `Known teams: ${listTeams().join(", ")}. Tell the user there is no data for this team.`);
 }
 
 export function describeNeeds(needs: TeamNeeds): string {
@@ -20,7 +24,7 @@ export function estimateFor(
   cities: string[],
   days: number,
   team: Team,
-  rate: { value: number; date: string },
+  rate: Rate,
 ): { estimates: CityCost[]; unknownCities: string[] } {
   const policy = getPolicy();
   const estimates: CityCost[] = [];

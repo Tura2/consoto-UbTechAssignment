@@ -3,9 +3,6 @@
   "maxNights": 2,
   "budgetIlsPerPerson": 4000,
   "overBudgetApprover": "CFO",
-  "plannedCurrency": "EUR",
-  "reportedCurrency": "ILS",
-  "rateSource": "ECB",
   "rules": [
     { "id": 1, "text": "An offsite is max 3 days and 2 nights." },
     { "id": 2, "text": "The budget is up to 4,000 ILS per person, including flights, hotel, food and activities. Anything above that needs the CFO's approval." },

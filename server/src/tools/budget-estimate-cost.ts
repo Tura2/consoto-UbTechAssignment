@@ -1,15 +1,15 @@
 import { z } from "zod";
-import type { CityCost } from "../../../shared/domain";
-import { getTeam, listCities, listTeams } from "../data/consoto-data";
+import type { CityCost, Rate } from "../../../shared/domain";
+import { getTeam, listCities } from "../data/consoto-data";
 import { fmt } from "../domain/format";
-import { estimateFor, internalSource } from "./helpers";
-import { defineTool, fail, ok } from "./types";
+import { estimateFor, internalSource, unknownTeam } from "./helpers";
+import { defineTool, ok } from "./types";
 
 export type CostData = {
   days: number;
   nights: number;
   teamSize: number;
-  rate: { value: number; date: string };
+  rate: Rate;
   estimates: CityCost[];
   unknownCities: string[];
 };
@@ -27,9 +27,7 @@ export const budgetEstimateCost = defineTool({
   }),
   async execute({ cities, days, team }, ctx) {
     const found = getTeam(team);
-    if (!found) {
-      return fail("unknown_team", `No team data for "${team}".`, `Known teams: ${listTeams().join(", ")}. Tell the user there is no data for this team.`);
-    }
+    if (!found) return unknownTeam(team);
     const { rate, source } = await ctx.data.ecbRate(ctx.signal);
     const { estimates, unknownCities } = estimateFor(cities, days, found, rate);
     const data: CostData = { days, nights: days - 1, teamSize: found.members.length, rate, estimates, unknownCities };

@@ -1,7 +1,7 @@
 // Builds the real dependencies (HTTP cache, data sources, OpenRouter) from the config.
 import { createDataSources } from "./clients/data-sources";
 import { createHttp } from "./clients/http";
-import { USER_AGENT, type Config } from "./config";
+import { CACHE_DIR, USER_AGENT, type Config } from "./config";
 import { createLimiter, createLlm, openRouterClient } from "./llm/openrouter";
 import type { TurnDeps } from "./orchestrator/turn";
 
@@ -11,7 +11,7 @@ export function todayIso(): string {
 }
 
 export function createRuntime(config: Config): { turnDeps: TurnDeps } {
-  const http = createHttp({ cacheDir: config.cacheDir, userAgent: USER_AGENT });
+  const http = createHttp({ cacheDir: CACHE_DIR, userAgent: USER_AGENT });
   const llm = createLlm({
     client: openRouterClient(config.apiKey),
     models: config.models,

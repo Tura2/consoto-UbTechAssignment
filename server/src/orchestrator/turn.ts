@@ -1,7 +1,7 @@
 // One chat turn: plan (LLM), trip facts (code), agents (LLM + code tools), policy (code), cards (code), answer (LLM).
 import { randomUUID } from "node:crypto";
 import type { AgentId, PolicyVerdict, Trip, VenuesResult } from "../../../shared/domain";
-import type { Emit } from "../../../shared/events";
+import type { Emit, Turn } from "../../../shared/events";
 import { cleanAnswer } from "../../../shared/text";
 import { AGENTS } from "../agents/registry";
 import { runAgent, type AgentResult } from "../agents/runner";
@@ -10,7 +10,7 @@ import { getTeam, teamNeeds } from "../data/consoto-data";
 import { datesOf } from "../domain/dates";
 import { allPlaces } from "../domain/places";
 import type { Llm } from "../llm/openrouter";
-import { historyMessages, type Conversation, type Turn } from "../state/conversations";
+import { historyMessages, type Conversation } from "../state/conversations";
 import { calendarFindCleanWindows, type CalendarData } from "../tools/calendar-find-clean-windows";
 import type { ItineraryData } from "../tools/itinerary-submit-plan";
 import { policyCheck } from "../tools/policy-check";
@@ -21,7 +21,10 @@ import { makePlan, type Plan } from "./plan";
 import { lastToolData } from "./tool-data";
 import { applyTripUpdate, depsKey, dropStaleFindings, fillPeriod, focusCities, namedCandidates } from "./trip";
 
-export type TurnDeps = { llm: Llm; data: DataSources; today: () => string; agentPhaseMs?: number };
+export type TurnDeps = { llm: Llm; data: DataSources; today: () => string };
+
+// One time budget for the whole agent phase. An agent still running after it reports a timeout.
+const AGENT_PHASE_MS = 90_000;
 
 // Findings from earlier turns that tools may read (the venue list and the latest itinerary).
 function findingsView(conversation: Conversation): Findings {
@@ -66,7 +69,7 @@ export async function runTurn(conversation: Conversation, message: string, deps:
     dropStaleFindings(conversation);
     // A plan that names agents can proceed: ask the question only when there is nothing to run.
     const clarify = plan.agents.length === 0 && plan.clarify ? plan.clarify : null;
-    emit({ type: "plan", agents: plan.agents, reason: plan.reason, trip: conversation.trip, clarify, ms: Date.now() - started });
+    emit({ type: "plan", agents: plan.agents, reason: plan.reason, trip: conversation.trip, ms: Date.now() - started });
 
     if (clarify) {
       emit({ type: "answer_delta", text: clarify });
@@ -107,8 +110,7 @@ async function runAgents(
     await assumeStartDate(conversation, deps, emit, signal, today);
   }
 
-  // One time budget for the whole agent phase. An agent still running after it reports a timeout.
-  const phaseSignal = AbortSignal.any([signal, AbortSignal.timeout(deps.agentPhaseMs ?? 90_000)]);
+  const phaseSignal = AbortSignal.any([signal, AbortSignal.timeout(AGENT_PHASE_MS)]);
   const runOne = async (agent: AgentId): Promise<AgentResult> => {
     const result = await runAgent({
       def: AGENTS[agent],

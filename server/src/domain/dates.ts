@@ -1,7 +1,7 @@
 // Pure date logic. Dates are "YYYY-MM-DD" strings, handled in UTC so time zones never shift a day.
 import type { DateWindow, HolidayItem } from "../../../shared/domain";
+import { DAY_MS } from "../lib/time";
 
-const DAY_MS = 86_400_000;
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const ISRAELI_WEEKEND = ["Fri", "Sat"];
 

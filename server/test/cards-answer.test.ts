@@ -10,17 +10,13 @@ import { itinerarySubmitPlan } from "../src/tools/itinerary-submit-plan";
 import { placesFindForTeam } from "../src/tools/places-find-for-team";
 import { runTool, type AnyTool } from "../src/tools/types";
 import { weatherGetOutlook } from "../src/tools/weather-get-outlook";
-import { BASE_TRIP, makeCtx } from "./helpers/ctx";
+import { ALL_CITIES as ALL, BASE_TRIP, LISBON_TRIP, MARCH, makeCtx } from "./helpers/ctx";
 import { scriptedLlm } from "./helpers/fake-llm";
 import { GOOD_PLAN, lisbonVenues } from "./helpers/lisbon";
 
-const ALL = ["Lisbon", "Barcelona", "Athens", "Prague", "Budapest"];
-const MARCH = { from: "2027-03-16", to: "2027-03-31" };
-const LISBON_TRIP: Trip = { ...BASE_TRIP, city: "Lisbon", start: { date: "2027-03-16", source: "assumed" } };
-
 async function run(tool: AnyTool, input: unknown, trip: Trip = BASE_TRIP): Promise<ToolRun> {
   const ctx = makeCtx({ trip, findings: { venues: lisbonVenues(), itinerary: null } });
-  return { tool: tool.name, input, result: await runTool(tool, input, ctx) };
+  return { tool: tool.name, result: await runTool(tool, input, ctx) };
 }
 
 function agentResult(agent: AgentResult["agent"], toolRuns: ToolRun[]): AgentResult {
@@ -114,7 +110,6 @@ describe("answer", () => {
       agentResult("venues", [
         {
           tool: "places_find_for_team",
-          input: {},
           result: { ok: false, summary: "down", error: { code: "source_unavailable", message: "Overpass is down", hint: "" } },
         },
       ]),

@@ -1,13 +1,5 @@
-import type { AgentsInfo, ConversationSummary, HealthInfo, StreamEvent } from "../../shared/events";
+import type { AgentsInfo, ConversationSummary, HealthInfo, StreamEvent, Turn } from "../../shared/events";
 import { parseSse } from "./sse";
-
-export type StoredTurn = {
-  id: string;
-  userMessage: string;
-  events: StreamEvent[];
-  answer: string;
-  status: "running" | "done" | "stopped" | "error";
-};
 
 export async function streamChat(args: {
   conversationId: string | null;
@@ -34,7 +26,7 @@ export async function streamChat(args: {
   }
 }
 
-export async function getConversation(id: string): Promise<{ id: string; turns: StoredTurn[] } | null> {
+export async function getConversation(id: string): Promise<{ id: string; turns: Turn[] } | null> {
   const response = await fetch(`/api/conversations/${encodeURIComponent(id)}`);
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`Could not load the conversation (HTTP ${response.status}).`);
